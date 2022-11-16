@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use cosmwasm_std::{Addr, Api, Binary, BlockInfo, CustomQuery, Deps, DepsMut, Env, MessageInfo, Querier, StdResult, Storage};
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, StdResult};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -59,6 +59,19 @@ pub enum OwnableError {
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 }
 
+impl<'a> Ownable<'a> {
+    pub fn get_owner(&self, deps: &Deps) -> StdResult<Addr> {
+       self.owner.load(deps.storage)
+    }
+
+    pub fn is_owner(&self, deps: &Deps, addr: &Addr) -> StdResult<bool> {
+        self.owner.load(deps.storage).map(|owner| owner.eq(addr))
+    }
+
+    pub fn set_owner(&self, deps: &mut DepsMut, addr: &Addr) -> StdResult<()> {
+        self.owner.save(deps.storage, addr)
+    }
+}
 
 impl<'a> Module for Ownable<'a> {
     type InstantiateMsg = Addr;
