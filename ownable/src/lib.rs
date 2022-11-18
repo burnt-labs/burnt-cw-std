@@ -16,12 +16,6 @@ pub struct Ownable<'a> {
     pub owner: Item<'a, Addr>,
 }
 
-impl<'a> Ownable<'a> {
-    pub fn owner(&self, deps: Deps) -> StdResult<Addr> {
-        self.owner.load(deps.storage)
-    }
-}
-
 impl<'a> Default for Ownable<'a> {
     fn default() -> Self {
         Self {
