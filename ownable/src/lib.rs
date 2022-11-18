@@ -13,13 +13,27 @@ use crate::OwnableError::Unauthorized;
 pub const OWNER_STATE: Item<Addr> = Item::new("owner");
 
 pub struct Ownable<'a> {
-    owner: Item<'a, Addr>,
+    pub owner: Item<'a, Addr>,
 }
 
 impl<'a> Ownable<'a> {
     pub fn owner(&self, deps: Deps) -> StdResult<Addr> {
         self.owner.load(deps.storage)
     }
+}
+
+impl<'a> Default for Ownable<'a> {
+    fn default() -> Self {
+        Self {
+            owner: OWNER_STATE,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct InstantiateMsg {
+   pub owner: Addr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -74,7 +88,7 @@ impl<'a> Ownable<'a> {
 }
 
 impl<'a> Module for Ownable<'a> {
-    type InstantiateMsg = Addr;
+    type InstantiateMsg = InstantiateMsg;
     type ExecuteMsg = ExecuteMsg;
     type QueryMsg = QueryMsg;
     type QueryResp = QueryResp;
@@ -85,7 +99,7 @@ impl<'a> Module for Ownable<'a> {
                    _: &Env,
                    _: &MessageInfo,
                    msg: Self::InstantiateMsg, ) -> Result<Response, Self::Error> {
-        self.owner.save(deps.storage, &msg)?;
+        self.owner.save(deps.storage, &msg.owner)?;
 
         Ok(Response::new())
     }
