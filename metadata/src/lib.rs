@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::fmt::Debug;
+use std::rc::Rc;
 use cosmwasm_std::{ Deps, DepsMut, Env, MessageInfo, StdResult};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
@@ -15,6 +17,18 @@ pub struct Metadata<'a, T>
 where T: Serialize + DeserializeOwned
 {
     pub metadata: Item<'a, T>,
+    ownable: Rc<RefCell<Ownable<'a>>>,
+}
+
+impl<'a, T> Metadata<'a, T>
+where T: Serialize + DeserializeOwned
+{
+    pub fn new(metadata: Item<'a, T>, ownable: Rc<RefCell<Ownable<'a>>>) -> Self {
+        Self {
+            metadata,
+            ownable,
+        }
+    }
 }
 
 impl<'a, T> Default for Metadata<'a, T> 
@@ -23,6 +37,7 @@ where T: Serialize + DeserializeOwned
     fn default() -> Self {
         Self {
             metadata: Item::new("metadata"),
+            ownable: Rc::new(RefCell::new(Ownable::default())),
         }
     }
 }
@@ -58,9 +73,6 @@ pub enum MetadataError {
 
     #[error("Unauthorized")]
     Unauthorized {},
-
-    // #[error("{0}")]
-    // SerdeJson(#[from] serde_json::Error),
 
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
@@ -106,7 +118,7 @@ where T: Serialize + DeserializeOwned
                msg: Self::ExecuteMsg, ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::SetMetadata(meta) => {
-                let owner_module = Ownable::default();
+                let owner_module = self.ownable.borrow();
                 let loaded_owner = owner_module.get_owner(&deps.as_ref()).unwrap();
                 if info.sender != loaded_owner {
                     Err(MetadataError::Unauthorized {})
