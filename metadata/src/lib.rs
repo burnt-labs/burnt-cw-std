@@ -1,65 +1,78 @@
+use std::cell::RefCell;
 use std::fmt::Debug;
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, StdResult};
+use std::rc::Rc;
+use cosmwasm_std::{ Deps, DepsMut, Env, MessageInfo, StdResult};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use cosmwasm_std::StdError;
 use thiserror::Error;
 
 use burnt_glue::module::Module;
 use burnt_glue::response::Response;
-use crate::OwnableError::Unauthorized;
+use ownable::Ownable;
 
-pub const OWNER_STATE: Item<Addr> = Item::new("owner");
-
-pub struct Ownable<'a> {
-    pub owner: Item<'a, Addr>,
+pub struct Metadata<'a, T>
+where T: Serialize + DeserializeOwned
+{
+    pub metadata: Item<'a, T>,
+    ownable: Rc<RefCell<Ownable<'a>>>,
 }
 
-impl<'a> Default for Ownable<'a> {
+impl<'a, T> Metadata<'a, T>
+where T: Serialize + DeserializeOwned
+{
+    pub fn new(metadata: Item<'a, T>, ownable: Rc<RefCell<Ownable<'a>>>) -> Self {
+        Self {
+            metadata,
+            ownable,
+        }
+    }
+}
+
+impl<'a, T> Default for Metadata<'a, T> 
+where T: Serialize + DeserializeOwned
+{
     fn default() -> Self {
         Self {
-            owner: OWNER_STATE,
+            metadata: Item::new("metadata"),
+            ownable: Rc::new(RefCell::new(Ownable::default())),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct InstantiateMsg {
-   pub owner: Addr,
+pub struct InstantiateMsg<T> {
+   pub metadata: T,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg {
-    SetOwner(Addr)
+pub enum ExecuteMsg<T> {
+    SetMetadata(T)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    // IsOwner returns true if the address matches the owner
-    IsOwner(Addr),
+    GetMetadata { },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryResp {
-    // IsOwner returns true if the address matches the owner
-    IsOwner(bool),
+pub enum QueryResp<T> {
+    Metadata(T),
 }
 
 #[derive(Error, Debug)]
-pub enum OwnableError {
+pub enum MetadataError {
     #[error("{0}")]
     Std(#[from] StdError),
 
     #[error("Unauthorized")]
     Unauthorized {},
-
-    // #[error("{0}")]
-    // SerdeJson(#[from] serde_json::Error),
 
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
@@ -67,33 +80,33 @@ pub enum OwnableError {
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 }
 
-impl<'a> Ownable<'a> {
-    pub fn get_owner(&self, deps: &Deps) -> StdResult<Addr> {
-       self.owner.load(deps.storage)
+impl<'a, T> Metadata<'a, T> 
+where T: Serialize + DeserializeOwned
+{
+    pub fn get_metadata(&self, deps: &Deps) -> StdResult<T> {
+       self.metadata.load(deps.storage)
     }
 
-    pub fn is_owner(&self, deps: &Deps, addr: &Addr) -> StdResult<bool> {
-        self.owner.load(deps.storage).map(|owner| owner.eq(addr))
-    }
-
-    pub fn set_owner(&self, deps: &mut DepsMut, addr: &Addr) -> StdResult<()> {
-        self.owner.save(deps.storage, addr)
+    pub fn set_metadata(&self, deps: &mut DepsMut, meta: &T) -> StdResult<()> {
+        self.metadata.save(deps.storage, meta)
     }
 }
 
-impl<'a> Module for Ownable<'a> {
-    type InstantiateMsg = InstantiateMsg;
-    type ExecuteMsg = ExecuteMsg;
+impl<'a, T> Module for Metadata<'a, T> 
+where T: Serialize + DeserializeOwned
+{
+    type InstantiateMsg = InstantiateMsg<T>;
+    type ExecuteMsg = ExecuteMsg<T>;
     type QueryMsg = QueryMsg;
-    type QueryResp = QueryResp;
-    type Error = OwnableError;
+    type QueryResp = QueryResp<T>;
+    type Error =   MetadataError;
 
     fn instantiate(&mut self,
                    deps: &mut DepsMut,
                    _: &Env,
                    _: &MessageInfo,
                    msg: Self::InstantiateMsg, ) -> Result<Response, Self::Error> {
-        self.owner.save(deps.storage, &msg.owner)?;
+        self.metadata.save(deps.storage, &msg.metadata)?;
 
         Ok(Response::new())
     }
@@ -104,12 +117,13 @@ impl<'a> Module for Ownable<'a> {
                info: MessageInfo,
                msg: Self::ExecuteMsg, ) -> Result<Response, Self::Error> {
         match msg {
-            ExecuteMsg::SetOwner(owner) => {
-                let loaded_owner = self.owner.load(deps.storage).unwrap();
+            ExecuteMsg::SetMetadata(meta) => {
+                let owner_module = self.ownable.borrow();
+                let loaded_owner = owner_module.get_owner(&deps.as_ref()).unwrap();
                 if info.sender != loaded_owner {
-                    Err(Unauthorized {})
+                    Err(MetadataError::Unauthorized {})
                 } else {
-                    self.owner.save(deps.storage, &owner).unwrap();
+                    self.metadata.save(deps.storage, &meta).unwrap();
                     let resp = Response::new();
                     Ok(resp)
                 }
@@ -122,9 +136,9 @@ impl<'a> Module for Ownable<'a> {
              _: Env,
              msg: Self::QueryMsg, ) -> Result<Self::QueryResp, Self::Error> {
         match msg {
-            QueryMsg::IsOwner(address) => {
-                let loaded_owner = self.owner.load(deps.storage).unwrap();
-                let resp = QueryResp::IsOwner(loaded_owner == address);
+            QueryMsg::GetMetadata{ } => {
+                let loaded_metadata = self.metadata.load(deps.storage).unwrap();
+                let resp = QueryResp::Metadata(loaded_metadata);
                 Ok(resp)
             }
         }
