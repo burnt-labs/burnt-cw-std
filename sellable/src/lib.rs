@@ -3,6 +3,9 @@ pub mod execute;
 pub mod msg;
 pub mod query;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
 use execute::try_list;
@@ -22,8 +25,8 @@ where
     Q: CustomMsg,
     E: CustomMsg,
 {
-    pub tokens: Tokens<'a, T, C, E, Q>,
-    pub ownable: Ownable<'a>,
+    pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
+    pub ownable: Rc<RefCell<Ownable<'a>>>,
 }
 
 impl<'a, T, C, E, Q> Default for Sellable<'a, T, C, E, Q>
@@ -34,8 +37,8 @@ where
 {
     fn default() -> Self {
         Self {
-            tokens: Tokens::default(),
-            ownable: Ownable::default(),
+            tokens: Rc::new(RefCell::new(Tokens::default())),
+            ownable: Rc::new(RefCell::new(Ownable::default())),
         }
     }
 }
@@ -46,7 +49,7 @@ where
     Q: CustomMsg,
     E: CustomMsg,
 {
-    pub fn new(tokens_module: Tokens<'a, T, C, E, Q>, ownable_module: Ownable<'a>) -> Self {
+    pub fn new(tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>, ownable_module: Rc<RefCell<Ownable<'a>>>) -> Self {
         Self {
             tokens: tokens_module,
             ownable: ownable_module,

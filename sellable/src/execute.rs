@@ -17,8 +17,8 @@ pub fn try_list<
     listings: Map<String, Uint64>,
     sellable_module: &mut Sellable<T, C, E, Q>,
 ) -> Result<Response, ContractError> {
-    let contract = &mut sellable_module.tokens.contract;
-    let ownable = &mut sellable_module.ownable;
+    let contract = &mut sellable_module.tokens.borrow_mut().contract;
+    let ownable = &sellable_module.ownable.borrow();
     for (token_id, price) in listings.iter() {
         verify_token(&deps.as_ref(), &env, &info, token_id, contract, ownable)?;
         contract
@@ -53,7 +53,7 @@ fn verify_token<
     info: &MessageInfo,
     token_id: &String,
     contract: &mut Cw721Contract<T, C, E, Q>,
-    ownable: &mut Ownable,
+    ownable: &Ownable,
 ) -> Result<(), ContractError> {
     let token = contract.tokens.load(deps.storage, token_id)?;
     // confirm token aren't locked or redeemed

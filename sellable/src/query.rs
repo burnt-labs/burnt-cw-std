@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use cosmwasm_std::{CustomMsg, Deps, Order, StdResult};
 use cw721_base::state::TokenInfo;
 use cw_storage_plus::Bound;
@@ -9,7 +11,8 @@ use crate::{msg::SellableTrait, Sellable};
 const DEFAULT_LIMIT: u32 = 500;
 const MAX_LIMIT: u32 = 10000;
 
-pub fn listed_tokens<
+pub fn listed_tokens
+<
     T: Serialize + DeserializeOwned + Clone + SellableTrait,
     C: CustomMsg,
     Q: CustomMsg,
@@ -20,7 +23,7 @@ pub fn listed_tokens<
     limit: Option<u32>,
     sellable_module: &Sellable<T, C, E, Q>,
 ) -> StdResult<ListedTokensResponse<T>> {
-    let contract = &sellable_module.tokens.contract;
+    let contract = &sellable_module.tokens.try_borrow().unwrap().contract;
 
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
     let start = start_after.map(|s| Bound::ExclusiveRaw(s.into()));
