@@ -25,14 +25,14 @@ pub fn try_list<
             .tokens
             .update::<_, ContractError>(deps.storage, token_id, |old| {
                 old.ok_or(StdError::not_found("SellableToken").into())
-                    .map(|old| {
+                    .map(|mut old| {
                         let opt_price = if (*price) > Uint64::new(0) {
                             Some(*price)
                         } else {
                             None
                         };
                         // TODO: get rid of this unwrap
-                        let meta = &old.extension;
+                        let meta = &mut old.extension;
                         meta.set_list_price(opt_price.unwrap());
                         old
                     })
