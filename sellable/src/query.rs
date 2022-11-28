@@ -1,4 +1,4 @@
-use cosmwasm_std::{CustomMsg, Deps, Order, StdResult};
+use cosmwasm_std::{CustomMsg, Deps, Order, StdResult, Uint64};
 use cw721_base::state::TokenInfo;
 use cw_storage_plus::Bound;
 use schemars::JsonSchema;
@@ -30,7 +30,12 @@ pub fn listed_tokens
         .tokens
         .range(deps.storage, start, None, Order::Ascending)
         .flat_map(|result| match result {
-            Ok(pair) => Some(pair),
+            Ok(pair) => {
+                if pair.1.extension.get_list_price() > Uint64::new(0) {
+                    return Some(pair);
+                }
+                return None;
+            },
             _ => None,
         })
         .take(limit)
