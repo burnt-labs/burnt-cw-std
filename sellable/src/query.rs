@@ -31,7 +31,7 @@ pub fn listed_tokens
         .range(deps.storage, start, None, Order::Ascending)
         .flat_map(|result| match result {
             Ok(pair) => {
-                if pair.1.extension.get_list_price() > Uint64::new(0) {
+                if pair.1.extension.get_list_price().unwrap() > Uint64::new(0) {
                     return Some(pair);
                 }
                 return None;
