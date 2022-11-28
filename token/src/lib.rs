@@ -1,9 +1,8 @@
 use std::fmt::Debug;
-use cosmwasm_std::{ Deps, DepsMut, Env, MessageInfo, CustomMsg };
+use cosmwasm_std::{ Deps, DepsMut, Env, MessageInfo, CustomMsg, Binary };
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::Binary;
 use cw721_base::{Cw721Contract, InstantiateMsg, ExecuteMsg, QueryMsg, ContractError};
 
 use burnt_glue::module::Module;
@@ -35,14 +34,6 @@ where
 #[serde(rename_all = "snake_case")]
 pub enum QueryResp {
     Result(Binary),
-}
-
-impl<'a, T, C, E, Q> Tokens<'a, T, C, E, Q>
-where 
-    T: Serialize + DeserializeOwned + Clone,
-    Q: CustomMsg,
-    E: CustomMsg,
-{
 }
 
 impl<'a,'b, T, C, E, Q> Module for Tokens<'a, T, C, E, Q> 
@@ -81,7 +72,7 @@ where
              deps: &Deps,
              env: Env,
              msg: QueryMsg<Q>, ) -> Result<Self::QueryResp, Self::Error> {
-        let response = self.contract.query(deps.clone(), env.clone(), msg)?;
-        Ok(QueryResp::Result(response))
+        let query_response = self.contract.query(deps.clone(), env.clone(), msg)?;
+        Ok(QueryResp::Result(query_response))
     }
 }
