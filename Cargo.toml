@@ -2,5 +2,6 @@
 members = [
     "ownable",
     "metadata",
-    "token"
+    "token",
+    "sellable"
 ]
