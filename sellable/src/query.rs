@@ -10,7 +10,7 @@ const DEFAULT_LIMIT: u32 = 500;
 const MAX_LIMIT: u32 = 10000;
 
 pub fn listed_tokens<
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     C: CustomMsg,
     Q: CustomMsg,
     E: CustomMsg,

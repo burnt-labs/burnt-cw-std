@@ -6,7 +6,7 @@ use schemars::Map;
 use serde::{de::DeserializeOwned, Serialize};
 
 pub fn try_list<
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     C: CustomMsg,
     Q: CustomMsg,
     E: CustomMsg,
@@ -43,7 +43,7 @@ pub fn try_list<
 }
 
 fn verify_token<
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     C: CustomMsg,
     Q: CustomMsg,
     E: CustomMsg,

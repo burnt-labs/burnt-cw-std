@@ -18,7 +18,7 @@ use burnt_glue::response::Response;
 
 pub struct Sellable<'a, T, C, E, Q>
 where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg,
     E: CustomMsg,
 {
@@ -28,7 +28,7 @@ where
 
 impl<'a, T, C, E, Q> Default for Sellable<'a, T, C, E, Q>
 where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg,
     E: CustomMsg,
 {
@@ -42,7 +42,7 @@ where
 
 impl<'a, T, C, E, Q> Sellable<'a, T, C, E, Q>
 where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg,
     E: CustomMsg,
 {
@@ -56,7 +56,7 @@ where
 
 impl<'a, 'b, T, C, E, Q> Module for Sellable<'a, T, C, E, Q>
 where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait<T>,
+    T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg + DeserializeOwned,
     E: CustomMsg + DeserializeOwned,
     C: CustomMsg + DeserializeOwned,
