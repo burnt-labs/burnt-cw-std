@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use cosmwasm_std::{CustomMsg, Deps, Order, StdResult};
 use cw721_base::state::TokenInfo;
 use cw_storage_plus::Bound;
