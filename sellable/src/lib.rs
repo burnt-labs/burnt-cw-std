@@ -1,7 +1,7 @@
-mod errors;
-mod execute;
-mod msg;
-mod query;
+pub mod errors;
+pub mod execute;
+pub mod msg;
+pub mod query;
 
 use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
