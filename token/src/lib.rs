@@ -27,7 +27,7 @@ where
     fn default() -> Self {
         Self {
             contract: Cw721Contract::<T, C, E, Q>::default(),
-            name: None
+            name: None,
         }
     }
 }
@@ -38,11 +38,8 @@ where
     Q: CustomMsg,
     E: CustomMsg,
 {
-    pub fn new(contract: Cw721Contract::<'a, T, C, E, Q>, name: Option<String>) -> Self {
-        Self {
-            contract,
-            name
-        }
+    pub fn new(contract: Cw721Contract<'a, T, C, E, Q>, name: Option<String>) -> Self {
+        Self { contract, name }
     }
 }
 

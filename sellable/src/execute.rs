@@ -1,5 +1,8 @@
 use crate::{errors::ContractError, msg::SellableTrait, Sellable};
-use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdError, Uint64, Addr, Order, Coin, BankMsg};
+use cosmwasm_std::{
+    Addr, BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    Uint64,
+};
 use cw721_base::Cw721Contract;
 use ownable::Ownable;
 use schemars::Map;
@@ -42,19 +45,21 @@ pub fn try_list<
     Ok(Response::new().add_attribute("method", "list"))
 }
 
-pub fn try_buy
-<
+pub fn try_buy<
     T: Serialize + DeserializeOwned + Clone + SellableTrait,
     C: CustomMsg,
     Q: CustomMsg,
     E: CustomMsg,
->
-(deps: DepsMut, info: MessageInfo, sellable_module: &mut Sellable<T, C, E, Q>) -> Result<Response, ContractError> {
+>(
+    deps: DepsMut,
+    info: MessageInfo,
+    sellable_module: &mut Sellable<T, C, E, Q>,
+) -> Result<Response, ContractError> {
     let denom_name: String;
     if let Some(denom) = sellable_module.tokens.borrow().name.clone() {
         denom_name = denom;
     } else {
-        return Err(ContractError::NoFundsPresent)
+        return Err(ContractError::NoFundsPresent);
     }
     let contract = &sellable_module.tokens.borrow_mut().contract;
     let maybe_coin = info.funds.iter().find(|&coin| coin.denom.eq(&denom_name));
@@ -62,7 +67,8 @@ pub fn try_buy
     if let Some(coin) = maybe_coin {
         let limit = (coin.amount.u128() as u64).into();
 
-        let mut lowest: Result<(String, Addr, Uint64), ContractError> = Err(ContractError::NoListedTokensError );
+        let mut lowest: Result<(String, Addr, Uint64), ContractError> =
+            Err(ContractError::NoListedTokensError);
         for (id, info) in contract
             .tokens
             .range(deps.storage, None, None, Order::Ascending)

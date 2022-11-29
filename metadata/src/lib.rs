@@ -1,12 +1,12 @@
-use std::cell::RefCell;
-use std::fmt::Debug;
-use std::rc::Rc;
-use cosmwasm_std::{ Deps, DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::StdError;
+use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo, StdResult};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::StdError;
+use std::cell::RefCell;
+use std::fmt::Debug;
+use std::rc::Rc;
 use thiserror::Error;
 
 use burnt_glue::module::Module;
@@ -14,25 +14,25 @@ use burnt_glue::response::Response;
 use ownable::Ownable;
 
 pub struct Metadata<'a, T>
-where T: Serialize + DeserializeOwned
+where
+    T: Serialize + DeserializeOwned,
 {
     pub metadata: Item<'a, T>,
     ownable: Rc<RefCell<Ownable<'a>>>,
 }
 
 impl<'a, T> Metadata<'a, T>
-where T: Serialize + DeserializeOwned
+where
+    T: Serialize + DeserializeOwned,
 {
     pub fn new(metadata: Item<'a, T>, ownable: Rc<RefCell<Ownable<'a>>>) -> Self {
-        Self {
-            metadata,
-            ownable,
-        }
+        Self { metadata, ownable }
     }
 }
 
-impl<'a, T> Default for Metadata<'a, T> 
-where T: Serialize + DeserializeOwned
+impl<'a, T> Default for Metadata<'a, T>
+where
+    T: Serialize + DeserializeOwned,
 {
     fn default() -> Self {
         Self {
@@ -45,19 +45,19 @@ where T: Serialize + DeserializeOwned
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg<T> {
-   pub metadata: T,
+    pub metadata: T,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg<T> {
-    SetMetadata(T)
+    SetMetadata(T),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    GetMetadata { },
+    GetMetadata {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -80,11 +80,12 @@ pub enum MetadataError {
     // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
 }
 
-impl<'a, T> Metadata<'a, T> 
-where T: Serialize + DeserializeOwned
+impl<'a, T> Metadata<'a, T>
+where
+    T: Serialize + DeserializeOwned,
 {
     pub fn get_metadata(&self, deps: &Deps) -> StdResult<T> {
-       self.metadata.load(deps.storage)
+        self.metadata.load(deps.storage)
     }
 
     pub fn set_metadata(&self, deps: &mut DepsMut, meta: &T) -> StdResult<()> {
@@ -92,30 +93,35 @@ where T: Serialize + DeserializeOwned
     }
 }
 
-impl<'a, T> Module for Metadata<'a, T> 
-where T: Serialize + DeserializeOwned
+impl<'a, T> Module for Metadata<'a, T>
+where
+    T: Serialize + DeserializeOwned,
 {
     type InstantiateMsg = InstantiateMsg<T>;
     type ExecuteMsg = ExecuteMsg<T>;
     type QueryMsg = QueryMsg;
     type QueryResp = QueryResp<T>;
-    type Error =   MetadataError;
+    type Error = MetadataError;
 
-    fn instantiate(&mut self,
-                   deps: &mut DepsMut,
-                   _: &Env,
-                   _: &MessageInfo,
-                   msg: Self::InstantiateMsg, ) -> Result<Response, Self::Error> {
+    fn instantiate(
+        &mut self,
+        deps: &mut DepsMut,
+        _: &Env,
+        _: &MessageInfo,
+        msg: Self::InstantiateMsg,
+    ) -> Result<Response, Self::Error> {
         self.metadata.save(deps.storage, &msg.metadata)?;
 
         Ok(Response::new())
     }
 
-    fn execute(&mut self,
-               deps: &mut DepsMut,
-               _: Env,
-               info: MessageInfo,
-               msg: Self::ExecuteMsg, ) -> Result<Response, Self::Error> {
+    fn execute(
+        &mut self,
+        deps: &mut DepsMut,
+        _: Env,
+        info: MessageInfo,
+        msg: Self::ExecuteMsg,
+    ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::SetMetadata(meta) => {
                 let owner_module = self.ownable.borrow();
@@ -131,12 +137,14 @@ where T: Serialize + DeserializeOwned
         }
     }
 
-    fn query(&self,
-             deps: &Deps,
-             _: Env,
-             msg: Self::QueryMsg, ) -> Result<Self::QueryResp, Self::Error> {
+    fn query(
+        &self,
+        deps: &Deps,
+        _: Env,
+        msg: Self::QueryMsg,
+    ) -> Result<Self::QueryResp, Self::Error> {
         match msg {
-            QueryMsg::GetMetadata{ } => {
+            QueryMsg::GetMetadata {} => {
                 let loaded_metadata = self.metadata.load(deps.storage).unwrap();
                 let resp = QueryResp::Metadata(loaded_metadata);
                 Ok(resp)
