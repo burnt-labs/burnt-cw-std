@@ -37,6 +37,6 @@ pub enum QueryMsg {
 pub trait SellableTrait {
     fn get_redeemed(&self) -> bool;
     fn get_locked(&self) -> bool;
-    fn set_list_price(&mut self, price: Uint64) -> bool;
+    fn set_list_price(&mut self, price: Option<Uint64>) -> bool;
     fn get_list_price(&self) -> Option<Uint64>;
 }
