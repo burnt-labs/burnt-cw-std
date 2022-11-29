@@ -4,7 +4,7 @@ use cw_storage_plus::Bound;
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::{msg::SellableTrait, Sellable};
+use crate::{msg::SellableTrait, Sellable, errors::ContractError};
 
 const DEFAULT_LIMIT: u32 = 500;
 const MAX_LIMIT: u32 = 10000;
@@ -31,8 +31,10 @@ pub fn listed_tokens
         .range(deps.storage, start, None, Order::Ascending)
         .flat_map(|result| match result {
             Ok(pair) => {
-                if pair.1.extension.get_list_price().unwrap() > Uint64::new(0) {
-                    return Some(pair);
+                if let Some(list_price) = pair.1.extension.get_list_price() { 
+                    if list_price > Uint64::new(0) {
+                        return Some(pair);
+                    }
                 }
                 return None;
             },
