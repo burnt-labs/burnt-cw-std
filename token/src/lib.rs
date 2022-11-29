@@ -32,6 +32,20 @@ where
     }
 }
 
+impl<'a, T, C, E, Q> Tokens<'a, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    Q: CustomMsg,
+    E: CustomMsg,
+{
+    pub fn new(contract: Cw721Contract::<'a, T, C, E, Q>, name: Option<String>) -> Self {
+        Self {
+            contract,
+            name
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryResp {
