@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
-use execute::try_list;
+use execute::{try_list, try_buy};
 use msg::{ExecuteMsg, QueryMsg, QueryResp, SellableTrait};
 use ownable::Ownable;
 use query::listed_tokens;
@@ -89,7 +89,7 @@ where
     ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::Buy {} => {
-                unimplemented!()
+                try_buy(deps.branch(), info, self)?;
             }
             ExecuteMsg::List { listings } => {
                 try_list(deps, env, info, listings, self)?;
