@@ -158,8 +158,6 @@ fn verify_token<
     }
     if ownable.is_owner(deps, &info.sender)? {
         return Ok(());
-    } else {
-        return Err(ContractError::Unauthorized);
     }
     return Ok(());
 }
