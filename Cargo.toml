@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "ownable",
-    "proxy",
     "metadata",
+    "token"
 ]
