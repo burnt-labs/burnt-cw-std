@@ -8,10 +8,8 @@ use std::rc::Rc;
 
 use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
-use execute::{try_buy, try_list};
 use msg::{ExecuteMsg, QueryMsg, QueryResp, SellableTrait};
 use ownable::Ownable;
-use query::listed_tokens;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use token::Tokens;
@@ -24,6 +22,7 @@ where
     T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg,
     E: CustomMsg,
+    C: CustomMsg,
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
@@ -34,28 +33,12 @@ where
     T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg,
     E: CustomMsg,
+    C: CustomMsg,
 {
     fn default() -> Self {
         Self {
             tokens: Rc::new(RefCell::new(Tokens::default())),
             ownable: Rc::new(RefCell::new(Ownable::default())),
-        }
-    }
-}
-
-impl<'a, T, C, E, Q> Sellable<'a, T, C, E, Q>
-where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait,
-    Q: CustomMsg,
-    E: CustomMsg,
-{
-    pub fn new(
-        tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
-        ownable_module: Rc<RefCell<Ownable<'a>>>,
-    ) -> Self {
-        Self {
-            tokens: tokens_module,
-            ownable: ownable_module,
         }
     }
 }
@@ -92,10 +75,10 @@ where
     ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::Buy {} => {
-                try_buy(deps.branch(), info, self)?;
+                self.try_buy(deps.branch(), info)?;
             }
             ExecuteMsg::List { listings } => {
-                try_list(deps, env, info, listings, self)?;
+                self.try_list(deps, env, info, listings)?;
             }
             ExecuteMsg::RedeemTicket { .. } => {
                 unimplemented!()
@@ -107,7 +90,7 @@ where
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {
         match msg {
             QueryMsg::ListedTokens { start_after, limit } => {
-                let response = listed_tokens(deps, start_after, limit, self);
+                let response = self.listed_tokens(deps, start_after, limit);
                 return Ok(QueryResp::Result(to_binary(&response.unwrap())?));
             }
         }
