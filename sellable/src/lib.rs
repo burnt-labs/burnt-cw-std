@@ -43,7 +43,7 @@ where
     }
 }
 
-impl<'a, 'b, T, C, E, Q> Module for Sellable<'a, T, C, E, Q>
+impl<'a, T, C, E, Q> Module for Sellable<'a, T, C, E, Q>
 where
     T: Serialize + DeserializeOwned + Clone + SellableTrait,
     Q: CustomMsg + DeserializeOwned,
