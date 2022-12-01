@@ -15,7 +15,7 @@ pub enum ContractError {
     #[error("Locked")]
     TicketLocked,
 
-    #[error("NoMetadataPresent")]
+    #[error("Missing required metadata")]
     NoMetadataPresent,
 
     #[error("No tokens listed for sale")]
