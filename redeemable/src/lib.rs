@@ -15,16 +15,23 @@ use burnt_glue::module::Module;
 use burnt_glue::response::Response;
 
 pub struct Redeemable<'a> {
-    pub locked_token: Item<'a, Set<String>>,
+    pub locked_tokens: Item<'a, Set<String>>,
 }
 
 impl Default for Redeemable<'_> {
     fn default() -> Self {
         Self {
-            locked_token: LOCKED_ITEMS,
+            locked_tokens: LOCKED_ITEMS,
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct InstantiateMsg {
+    locked_tokens: Set<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
@@ -45,7 +52,7 @@ pub enum QueryResp {
 }
 
 impl Module for Redeemable<'_> {
-    type InstantiateMsg = ();
+    type InstantiateMsg = InstantiateMsg;
     type ExecuteMsg = ExecuteMsg;
     type QueryMsg = QueryMsg;
     type QueryResp = QueryResp;
@@ -53,12 +60,13 @@ impl Module for Redeemable<'_> {
 
     fn instantiate(
         &mut self,
-        _deps: &mut DepsMut,
+        deps: &mut DepsMut,
         _env: &Env,
         _info: &MessageInfo,
-        _msg: (),
+        msg: InstantiateMsg
     ) -> Result<Response, Self::Error> {
-        unimplemented!();
+        self.locked_tokens.save(deps.storage, &msg.locked_tokens)?;
+        Ok(Response::new())
     }
 
     fn execute(
