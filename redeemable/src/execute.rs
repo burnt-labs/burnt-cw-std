@@ -11,6 +11,7 @@ impl Redeemable<'_> {
     ) -> Result<Response, ContractError> {
         let mut locked_tokens = LOCKED_ITEMS.load(deps.storage)?;
         locked_tokens.insert(token_id);
+        LOCKED_ITEMS.save(deps.storage, &locked_tokens)?;
         Ok(Response::new().add_attribute("method", "lock ticket"))
     }
 }
