@@ -41,8 +41,12 @@ where
 
         for (token_id, price) in listings {
             if price > Uint64::new(0) {
-                self.listed_tokens
-                    .save(deps.storage, token_id.as_str(), &price)?;
+                if let Some(_) = self.tokens.borrow().contract.tokens.may_load(deps.storage, &token_id).unwrap() {
+                    self.listed_tokens
+                        .save(deps.storage, token_id.as_str(), &price)?;
+                } else {
+                    return Err(ContractError::NoMetadataPresent);
+                }
             }
         }
         Ok(Response::new().add_attribute("method", "list"))
@@ -161,9 +165,13 @@ where
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
         for (token_id, price) in listings {
             if price > Uint64::new(0) {
-                check_redeemable(&deps.as_ref(), &env, &info, &token_id, redeemable)?;
-                self.listed_tokens
-                    .save(deps.storage, token_id.as_str(), &price)?;
+                if let Some(_) = self.tokens.borrow().contract.tokens.may_load(deps.storage, &token_id).unwrap() {
+                    check_redeemable(&deps.as_ref(), &env, &info, &token_id, redeemable)?;
+                    self.listed_tokens
+                        .save(deps.storage, token_id.as_str(), &price)?;
+                } else {
+                    return Err(ContractError::NoMetadataPresent);
+                }
             }
         }
         Ok(Response::new().add_attribute("method", "list"))
