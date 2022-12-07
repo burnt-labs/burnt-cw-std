@@ -1,4 +1,6 @@
-use cosmwasm_std::{CustomMsg, Deps, Order, StdResult, Uint64};
+use std::borrow::Borrow;
+
+use cosmwasm_std::{CustomMsg, Deps, Order, StdResult};
 use cw721_base::state::TokenInfo;
 use cw_storage_plus::Bound;
 use schemars::JsonSchema;
@@ -23,29 +25,25 @@ where
         limit: Option<u32>,
     ) -> StdResult<ListedTokensResponse<T>> {
         let contract = &self.tokens.try_borrow().unwrap().contract;
-        let listed_tokens = self.listed_tokens.load(deps.storage)?;
+        let listed_tokens = self.listed_tokens.borrow();
 
         let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
         let start = start_after.map(|s| Bound::ExclusiveRaw(s.into()));
 
-        let token_vec = contract
-            .tokens
-            .range(deps.storage, start, None, Order::Ascending)
-            .flat_map(|result| match result {
-                Ok(pair) => {
-                    if listed_tokens.contains_key(&pair.0) {
-                        if *(listed_tokens.get(&pair.0).unwrap()) > Uint64::new(0) {
-                            return Some(pair);
-                        }
-                    }
-                    return None;
-                }
-                _ => None,
-            })
+        let listed_tokens_sorted = listed_tokens
+            .range(deps.storage, start, None, Order::Descending)
             .take(limit)
-            .collect();
+            .map(|t| t.unwrap())
+            .map(|res| {
+                // TODO: Make sure burnt tokens are't included
+                let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
+                return (res.0, token_info);
+            })
+            .collect::<Vec<(String, TokenInfo<T>)>>();
 
-        Ok(ListedTokensResponse { tokens: token_vec })
+        Ok(ListedTokensResponse {
+            tokens: listed_tokens_sorted,
+        })
     }
 }
 
@@ -63,29 +61,25 @@ where
         limit: Option<u32>,
     ) -> StdResult<ListedTokensResponse<T>> {
         let contract = &self.tokens.try_borrow().unwrap().contract;
-        let listed_tokens = self.listed_tokens.load(deps.storage)?;
+        let listed_tokens = self.listed_tokens.borrow();
 
         let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
         let start = start_after.map(|s| Bound::ExclusiveRaw(s.into()));
 
-        let token_vec = contract
-            .tokens
-            .range(deps.storage, start, None, Order::Ascending)
-            .flat_map(|result| match result {
-                Ok(pair) => {
-                    if listed_tokens.contains_key(&pair.0) {
-                        if *(listed_tokens.get(&pair.0).unwrap()) > Uint64::new(0) {
-                            return Some(pair);
-                        }
-                    }
-                    return None;
-                }
-                _ => None,
-            })
+        let listed_tokens_sorted = listed_tokens
+            .range(deps.storage, start, None, Order::Descending)
             .take(limit)
-            .collect();
+            .map(|t| t.unwrap())
+            .map(|res| {
+                // TODO: Make sure burnt tokens are't included
+                let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
+                return (res.0, token_info);
+            })
+            .collect::<Vec<(String, TokenInfo<T>)>>();
 
-        Ok(ListedTokensResponse { tokens: token_vec })
+        Ok(ListedTokensResponse {
+            tokens: listed_tokens_sorted,
+        })
     }
 }
 

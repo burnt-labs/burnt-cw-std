@@ -3,18 +3,18 @@ pub mod execute;
 pub mod msg;
 pub mod query;
 pub mod state;
+mod test;
 
-use cw_storage_plus::Item;
+use cw_storage_plus::Map;
 use state::LISTED_TOKENS;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
 use errors::ContractError;
-use msg::{ExecuteMsg, QueryMsg, QueryResp};
+use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use ownable::Ownable;
 use redeemable::Redeemable;
-use schemars::Map;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use token::Tokens;
@@ -31,7 +31,7 @@ where
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
-    pub listed_tokens: Item<'a, Map<String, Uint64>>,
+    pub listed_tokens: Map<'a, &'a str, Uint64>,
 }
 
 pub struct RSellable<'a, T, C, E, Q>
@@ -43,7 +43,7 @@ where
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
-    pub listed_tokens: Item<'a, Map<String, Uint64>>,
+    pub listed_tokens: Map<'a, &'a str, Uint64>,
     pub redeemable: Rc<RefCell<Redeemable<'a>>>,
 }
 
@@ -87,7 +87,7 @@ where
     E: CustomMsg + DeserializeOwned,
     C: CustomMsg + DeserializeOwned,
 {
-    type InstantiateMsg = ();
+    type InstantiateMsg = InstantiateMsg;
     type ExecuteMsg = ExecuteMsg;
     type QueryMsg = QueryMsg;
     type QueryResp = QueryResp;
@@ -95,12 +95,15 @@ where
 
     fn instantiate(
         &mut self,
-        _deps: &mut DepsMut,
+        deps: &mut DepsMut,
         _env: &Env,
         _info: &MessageInfo,
-        _msg: (),
+        msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
-        unimplemented!();
+        for (token_id, price) in &msg.tokens {
+            self.listed_tokens.save(deps.storage, token_id, price)?;
+        }
+        Ok(Response::default())
     }
 
     fn execute(
@@ -114,8 +117,8 @@ where
             ExecuteMsg::Buy {} => {
                 self.try_buy(deps.branch(), info)?;
             }
-            ExecuteMsg::List { mut listings } => {
-                self.try_list(deps, env, info, &mut listings)?;
+            ExecuteMsg::List { listings } => {
+                self.try_list(deps, env, info, listings)?;
             }
             ExecuteMsg::RedeemTicket { .. } => {
                 unimplemented!()

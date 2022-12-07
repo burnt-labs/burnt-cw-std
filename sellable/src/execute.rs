@@ -1,13 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{errors::ContractError, state::LISTED_TOKENS, RSellable, Sellable};
+use crate::{errors::ContractError, RSellable, Sellable};
 use cosmwasm_std::{
-    Addr, BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, Uint64,
+    BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, Uint64,
 };
-use cw_storage_plus::Item;
+use cw_storage_plus::Map;
 use ownable::Ownable;
 use redeemable::Redeemable;
-use schemars::Map;
 use serde::{de::DeserializeOwned, Serialize};
 use token::Tokens;
 
@@ -21,7 +20,7 @@ where
     pub fn new(
         tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
-        listed_tokens: Item<'a, Map<String, Uint64>>,
+        listed_tokens: Map<'a, &'a str, Uint64>,
     ) -> Self {
         Self {
             tokens: tokens_module,
@@ -35,14 +34,17 @@ where
         deps: &mut DepsMut,
         env: Env,
         info: MessageInfo,
-        listings: &mut Map<String, Uint64>,
+        listings: schemars::Map<String, Uint64>,
     ) -> Result<Response, ContractError> {
         let ownable = &self.ownable.borrow();
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
 
-        let mut listed_tokens = self.listed_tokens.load(deps.storage)?;
-        listed_tokens.append(listings);
-        self.listed_tokens.save(deps.storage, &listed_tokens)?;
+        for (token_id, price) in listings {
+            if price > Uint64::new(0) {
+                self.listed_tokens
+                    .save(deps.storage, token_id.as_str(), &price)?;
+            }
+        }
         Ok(Response::new().add_attribute("method", "list"))
     }
 
@@ -54,24 +56,29 @@ where
             return Err(ContractError::NoFundsPresent);
         }
         let contract = &self.tokens.borrow_mut().contract;
-        let mut listed_tokens = self.listed_tokens.load(deps.storage)?;
         let maybe_coin = info.funds.iter().find(|&coin| coin.denom.eq(&denom_name));
 
         if let Some(coin) = maybe_coin {
             let limit = (coin.amount.u128() as u64).into();
 
-            let mut lowest: Result<(String, Addr, Uint64), ContractError> =
-                Err(ContractError::NoListedTokensError);
-            for (id, list_price) in &listed_tokens {
-                let token_info = contract.tokens.load(deps.storage, &id)?;
-                if let Ok((_, _, lowest_price)) = lowest {
-                    if *list_price < lowest_price {
-                        lowest = Ok((id.to_string(), token_info.owner, *list_price))
-                    }
-                } else {
-                    lowest = Ok((id.to_string(), token_info.owner, *list_price))
-                }
+            let sorted_tokens = self
+                .listed_tokens
+                .range(deps.storage, None, None, Order::Descending)
+                .map(|t| t.unwrap())
+                .collect::<Vec<(String, Uint64)>>();
+            if sorted_tokens.len() == 0 {
+                return Err(ContractError::NoListedTokensError);
             }
+            let lowest_listed_token = sorted_tokens.get(sorted_tokens.len() - 1).unwrap();
+            let token_info = contract
+                .tokens
+                .load(deps.storage, lowest_listed_token.0.as_str())?;
+            // TODO: In-efficient access. Get rid of cloning
+            let lowest = Ok((
+                lowest_listed_token.clone().0,
+                token_info.owner,
+                lowest_listed_token.1,
+            ));
 
             lowest
                 .and_then(|l @ (_, _, lowest_price)| {
@@ -94,8 +101,8 @@ where
                             Ok(token_info)
                         },
                     )?;
-                    listed_tokens.remove(&lowest_token_id);
-                    LISTED_TOKENS.save(deps.storage, &listed_tokens)?;
+                    self.listed_tokens
+                        .remove(deps.storage, lowest_token_id.as_str());
 
                     let payment_coin = Coin::new(lowest_price.u64() as u128, &denom_name);
                     let delta = limit - lowest_price;
@@ -130,7 +137,7 @@ where
     pub fn new(
         token_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
-        listed_tokens: Item<'a, Map<String, Uint64>>,
+        listed_tokens: Map<'a, &'a str, Uint64>,
         redeemable_module: Rc<RefCell<Redeemable<'a>>>,
     ) -> Self {
         Self {
@@ -146,19 +153,19 @@ where
         deps: &mut DepsMut,
         env: Env,
         info: MessageInfo,
-        listings: Map<String, Uint64>,
+        listings: schemars::Map<String, Uint64>,
     ) -> Result<Response, ContractError> {
         let ownable = &self.ownable.borrow();
         let redeemable = &self.redeemable.borrow();
-        let mut listed_tokens = self.listed_tokens.load(deps.storage)?;
 
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
-        for (token_id, price) in listings.iter() {
-            check_redeemable(&deps.as_ref(), &env, &info, token_id, redeemable)?;
-
-            listed_tokens.insert(token_id.to_string(), *price);
+        for (token_id, price) in listings {
+            if price > Uint64::new(0) {
+                check_redeemable(&deps.as_ref(), &env, &info, &token_id, redeemable)?;
+                self.listed_tokens
+                    .save(deps.storage, token_id.as_str(), &price)?;
+            }
         }
-        self.listed_tokens.save(deps.storage, &listed_tokens)?;
         Ok(Response::new().add_attribute("method", "list"))
     }
 
@@ -176,34 +183,39 @@ where
         }
         let contract = &self.tokens.borrow_mut().contract;
         let redeemable = &self.redeemable.borrow();
-        let mut listed_tokens = self.listed_tokens.load(deps.storage)?;
 
         let maybe_coin = info.funds.iter().find(|&coin| coin.denom.eq(&denom_name));
 
         if let Some(coin) = maybe_coin {
             let limit = (coin.amount.u128() as u64).into();
 
-            let mut lowest: Result<(String, Addr, Uint64), ContractError> =
-                Err(ContractError::NoListedTokensError);
-            for (id, token_info) in contract
-                .tokens
+            let sorted_tokens = self
+                .listed_tokens
                 .range(deps.storage, None, None, Order::Ascending)
-                .flatten()
-            {
-                check_redeemable(&deps.as_ref(), env, &info, &id, redeemable)?;
-                let opt_price = listed_tokens.get(&id);
-                if let Some(list_price) = opt_price {
-                    if let Ok((_, _, lowest_price)) = lowest {
-                        if *list_price < lowest_price {
-                            lowest = Ok((id, token_info.owner, *list_price))
-                        }
-                    } else {
-                        lowest = Ok((id, token_info.owner, *list_price))
-                    }
-                } else {
-                    return Err(ContractError::NoListedTokensError);
-                }
+                .map(|t| t.unwrap())
+                .collect::<Vec<(String, Uint64)>>();
+
+            if sorted_tokens.len() == 0 {
+                return Err(ContractError::NoListedTokensError);
             }
+            let lowest_listed_token = sorted_tokens.get(sorted_tokens.len() - 1).unwrap();
+
+            check_redeemable(
+                &deps.as_ref(),
+                env,
+                &info,
+                &lowest_listed_token.0,
+                redeemable,
+            )?;
+            let token_info = contract
+                .tokens
+                .load(deps.storage, lowest_listed_token.0.as_str())?;
+            // TODO: Get rid of cloning
+            let lowest = Ok((
+                lowest_listed_token.clone().0,
+                token_info.owner,
+                lowest_listed_token.1,
+            ));
 
             lowest
                 .and_then(|l @ (_, _, lowest_price)| {
@@ -226,8 +238,8 @@ where
                             Ok(token_info)
                         },
                     )?;
-                    listed_tokens.remove(&lowest_token_id);
-                    LISTED_TOKENS.save(deps.storage, &listed_tokens)?;
+                    self.listed_tokens
+                        .remove(deps.storage, lowest_token_id.as_str());
 
                     let payment_coin = Coin::new(lowest_price.u64() as u128, &denom_name);
                     let delta = limit - lowest_price;
