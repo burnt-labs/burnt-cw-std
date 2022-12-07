@@ -33,8 +33,3 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
 }
-
-pub trait SellableTrait {
-    fn set_list_price(&mut self, price: Option<Uint64>) -> bool;
-    fn get_list_price(&self) -> Option<Uint64>;
-}

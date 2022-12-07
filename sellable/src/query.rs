@@ -4,14 +4,14 @@ use cw_storage_plus::Bound;
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::{msg::SellableTrait, RSellable, Sellable};
+use crate::{RSellable, Sellable};
 
 const DEFAULT_LIMIT: u32 = 500;
 const MAX_LIMIT: u32 = 10000;
 
 impl<'a, T, C, E, Q> Sellable<'a, T, C, E, Q>
 where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait,
+    T: Serialize + DeserializeOwned + Clone,
     Q: CustomMsg,
     E: CustomMsg,
     C: CustomMsg,
@@ -23,6 +23,7 @@ where
         limit: Option<u32>,
     ) -> StdResult<ListedTokensResponse<T>> {
         let contract = &self.tokens.try_borrow().unwrap().contract;
+        let listed_tokens = self.listed_tokens.load(deps.storage)?;
 
         let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
         let start = start_after.map(|s| Bound::ExclusiveRaw(s.into()));
@@ -32,8 +33,8 @@ where
             .range(deps.storage, start, None, Order::Ascending)
             .flat_map(|result| match result {
                 Ok(pair) => {
-                    if let Some(list_price) = pair.1.extension.get_list_price() {
-                        if list_price > Uint64::new(0) {
+                    if listed_tokens.contains_key(&pair.0) {
+                        if *(listed_tokens.get(&pair.0).unwrap()) > Uint64::new(0) {
                             return Some(pair);
                         }
                     }
@@ -50,7 +51,7 @@ where
 
 impl<'a, T, C, E, Q> RSellable<'a, T, C, E, Q>
 where
-    T: Serialize + DeserializeOwned + Clone + SellableTrait,
+    T: Serialize + DeserializeOwned + Clone,
     Q: CustomMsg,
     E: CustomMsg,
     C: CustomMsg,
@@ -62,6 +63,7 @@ where
         limit: Option<u32>,
     ) -> StdResult<ListedTokensResponse<T>> {
         let contract = &self.tokens.try_borrow().unwrap().contract;
+        let listed_tokens = self.listed_tokens.load(deps.storage)?;
 
         let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;
         let start = start_after.map(|s| Bound::ExclusiveRaw(s.into()));
@@ -71,8 +73,8 @@ where
             .range(deps.storage, start, None, Order::Ascending)
             .flat_map(|result| match result {
                 Ok(pair) => {
-                    if let Some(list_price) = pair.1.extension.get_list_price() {
-                        if list_price > Uint64::new(0) {
+                    if listed_tokens.contains_key(&pair.0) {
+                        if *(listed_tokens.get(&pair.0).unwrap()) > Uint64::new(0) {
                             return Some(pair);
                         }
                     }

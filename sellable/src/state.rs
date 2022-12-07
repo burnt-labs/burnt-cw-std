@@ -1,4 +1,5 @@
+use cosmwasm_std::Uint64;
 use cw_storage_plus::Item;
-use schemars::Set;
+use schemars::Map;
 
-pub const LOCKED_ITEMS: Item<Set<String>> = Item::new("locked_tokens");
+pub const LISTED_TOKENS: Item<Map<String, Uint64>> = Item::new("listed_tokens");
