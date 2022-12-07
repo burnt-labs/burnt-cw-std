@@ -63,7 +63,7 @@ impl Module for Redeemable<'_> {
         deps: &mut DepsMut,
         _env: &Env,
         _info: &MessageInfo,
-        msg: InstantiateMsg
+        msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         self.locked_tokens.save(deps.storage, &msg.locked_tokens)?;
         Ok(Response::new())

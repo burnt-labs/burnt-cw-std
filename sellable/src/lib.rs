@@ -4,9 +4,9 @@ pub mod msg;
 pub mod query;
 pub mod state;
 
-use std::cell::RefCell;
 use cw_storage_plus::Item;
 use state::LISTED_TOKENS;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
@@ -31,7 +31,7 @@ where
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
-    pub listed_tokens: Item<'a, Map<String, Uint64>>
+    pub listed_tokens: Item<'a, Map<String, Uint64>>,
 }
 
 pub struct RSellable<'a, T, C, E, Q>

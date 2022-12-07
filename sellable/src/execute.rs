@@ -1,9 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{errors::ContractError, RSellable, Sellable, state::LISTED_TOKENS};
+use crate::{errors::ContractError, state::LISTED_TOKENS, RSellable, Sellable};
 use cosmwasm_std::{
-    Addr, BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    Uint64,
+    Addr, BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, Uint64,
 };
 use cw_storage_plus::Item;
 use ownable::Ownable;
@@ -22,12 +21,12 @@ where
     pub fn new(
         tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
-        listed_tokens: Item<'a, Map<String, Uint64>>
+        listed_tokens: Item<'a, Map<String, Uint64>>,
     ) -> Self {
         Self {
             tokens: tokens_module,
             ownable: ownable_module,
-            listed_tokens
+            listed_tokens,
         }
     }
 
@@ -63,8 +62,7 @@ where
 
             let mut lowest: Result<(String, Addr, Uint64), ContractError> =
                 Err(ContractError::NoListedTokensError);
-            for (id, list_price) in &listed_tokens
-            {
+            for (id, list_price) in &listed_tokens {
                 let token_info = contract.tokens.load(deps.storage, &id)?;
                 if let Ok((_, _, lowest_price)) = lowest {
                     if *list_price < lowest_price {
@@ -157,7 +155,7 @@ where
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
         for (token_id, price) in listings.iter() {
             check_redeemable(&deps.as_ref(), &env, &info, token_id, redeemable)?;
-    
+
             listed_tokens.insert(token_id.to_string(), *price);
         }
         self.listed_tokens.save(deps.storage, &listed_tokens)?;
