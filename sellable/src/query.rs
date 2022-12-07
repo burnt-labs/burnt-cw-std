@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use cosmwasm_std::{CustomMsg, Deps, Order, StdResult};
+use cosmwasm_std::{CustomMsg, Deps, Order, StdResult, Uint64};
 use cw721_base::state::TokenInfo;
 use cw_storage_plus::Bound;
 use schemars::JsonSchema;
@@ -37,9 +37,9 @@ where
             .map(|res| {
                 // TODO: Make sure burnt tokens are't included
                 let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
-                return (res.0, token_info);
+                return (res.0, res.1, token_info);
             })
-            .collect::<Vec<(String, TokenInfo<T>)>>();
+            .collect::<Vec<(String, Uint64, TokenInfo<T>)>>();
 
         Ok(ListedTokensResponse {
             tokens: listed_tokens_sorted,
@@ -73,9 +73,9 @@ where
             .map(|res| {
                 // TODO: Make sure burnt tokens are't included
                 let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
-                return (res.0, token_info);
+                return (res.0, res.1, token_info);
             })
-            .collect::<Vec<(String, TokenInfo<T>)>>();
+            .collect::<Vec<(String, Uint64, TokenInfo<T>)>>();
 
         Ok(ListedTokensResponse {
             tokens: listed_tokens_sorted,
@@ -88,5 +88,5 @@ pub struct ListedTokensResponse<T> {
     /// Contains all token_ids in lexicographical ordering
     /// If there are more than `limit`, use `start_from` in future queries
     /// to achieve pagination.
-    pub tokens: Vec<(String, TokenInfo<T>)>,
+    pub tokens: Vec<(String, Uint64, TokenInfo<T>)>,
 }
