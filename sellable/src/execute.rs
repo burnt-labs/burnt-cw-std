@@ -191,7 +191,7 @@ where
 
             let sorted_tokens = self
                 .listed_tokens
-                .range(deps.storage, None, None, Order::Ascending)
+                .range(deps.storage, None, None, Order::Descending)
                 .map(|t| t.unwrap())
                 .collect::<Vec<(String, Uint64)>>();
 
