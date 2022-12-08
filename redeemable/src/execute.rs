@@ -1,4 +1,4 @@
-use crate::{errors::ContractError, state::LOCKED_ITEMS, Redeemable};
+use crate::{errors::ContractError, Redeemable};
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 use cw_storage_plus::Item;
 use schemars::Set;
@@ -15,9 +15,9 @@ impl<'a> Redeemable<'a> {
         _info: MessageInfo,
         token_id: String,
     ) -> Result<Response, ContractError> {
-        let mut locked_tokens = LOCKED_ITEMS.load(deps.storage)?;
-        locked_tokens.insert(token_id);
-        self.locked_items.save(deps.storage, &locked_tokens)?;
+        let mut locked_items = self.locked_items.load(deps.storage)?;
+        locked_items.insert(token_id);
+        self.locked_items.save(deps.storage, &locked_items)?;
         Ok(Response::new().add_attribute("method", "lock ticket"))
     }
 }
