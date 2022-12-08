@@ -10,7 +10,7 @@ use state::LISTED_TOKENS;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use cosmwasm_std::{to_binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
+use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
 use errors::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use ownable::Ownable;
@@ -90,7 +90,7 @@ where
     type InstantiateMsg = InstantiateMsg;
     type ExecuteMsg = ExecuteMsg;
     type QueryMsg = QueryMsg;
-    type QueryResp = QueryResp;
+    type QueryResp = QueryResp<T>;
     type Error = ContractError;
 
     fn instantiate(
@@ -120,9 +120,6 @@ where
             ExecuteMsg::List { listings } => {
                 self.try_list(deps, env, info, listings)?;
             }
-            ExecuteMsg::RedeemTicket { .. } => {
-                unimplemented!()
-            }
         }
         Ok(Response::new())
     }
@@ -131,7 +128,7 @@ where
         match msg {
             QueryMsg::ListedTokens { start_after, limit } => {
                 let response = self.listed_tokens(deps, start_after, limit);
-                return Ok(QueryResp::Result(to_binary(&response.unwrap())?));
+                return Ok(QueryResp::ListedTokens((response.unwrap()).tokens));
             }
         }
     }
@@ -147,7 +144,7 @@ where
     type InstantiateMsg = ();
     type ExecuteMsg = ExecuteMsg;
     type QueryMsg = QueryMsg;
-    type QueryResp = QueryResp;
+    type QueryResp = QueryResp<T>;
     type Error = ContractError;
 
     fn instantiate(
@@ -174,9 +171,6 @@ where
             ExecuteMsg::List { listings } => {
                 self.try_list(deps, env, info, listings)?;
             }
-            ExecuteMsg::RedeemTicket { .. } => {
-                unimplemented!()
-            }
         }
         Ok(Response::new())
     }
@@ -185,7 +179,7 @@ where
         match msg {
             QueryMsg::ListedTokens { start_after, limit } => {
                 let response = self.listed_tokens(deps, start_after, limit);
-                return Ok(QueryResp::Result(to_binary(&response.unwrap())?));
+                return Ok(QueryResp::ListedTokens((response.unwrap()).tokens));
             }
         }
     }

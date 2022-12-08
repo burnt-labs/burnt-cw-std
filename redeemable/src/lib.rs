@@ -46,7 +46,7 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryResp {
-    Result(bool),
+    IsRedeemed(bool),
 }
 
 impl Module for Redeemable<'_> {
@@ -86,7 +86,7 @@ impl Module for Redeemable<'_> {
         match msg {
             QueryMsg::IsRedeemed(token_id) => {
                 let is_redeemed = self.is_redeemed(deps, token_id).unwrap_or(false);
-                Ok(QueryResp::Result(is_redeemed))
+                Ok(QueryResp::IsRedeemed(is_redeemed))
             }
         }
     }

@@ -4,6 +4,7 @@ use crate::{errors::ContractError, RSellable, Sellable};
 use cosmwasm_std::{
     BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, Uint64,
 };
+use cw721_base::state::TokenInfo;
 use cw_storage_plus::Map;
 use ownable::Ownable;
 use redeemable::Redeemable;
@@ -41,7 +42,7 @@ where
 
         for (token_id, price) in listings {
             if price > Uint64::new(0) {
-                if let Some(_) = self.tokens.borrow().contract.tokens.may_load(deps.storage, &token_id).unwrap() {
+                if let Ok(Some(_)) = self.tokens.borrow().contract.tokens.may_load(deps.storage, &token_id) {
                     self.listed_tokens
                         .save(deps.storage, token_id.as_str(), &price)?;
                 } else {
@@ -65,11 +66,12 @@ where
         if let Some(coin) = maybe_coin {
             let limit = (coin.amount.u128() as u64).into();
 
-            let sorted_tokens = self
+            let mut sorted_tokens = self
                 .listed_tokens
                 .range(deps.storage, None, None, Order::Descending)
                 .map(|t| t.unwrap())
                 .collect::<Vec<(String, Uint64)>>();
+                sorted_tokens.sort_unstable_by_key(|t| t.1);
             if sorted_tokens.len() == 0 {
                 return Err(ContractError::NoListedTokensError);
             }
@@ -197,12 +199,12 @@ where
         if let Some(coin) = maybe_coin {
             let limit = (coin.amount.u128() as u64).into();
 
-            let sorted_tokens = self
+            let mut sorted_tokens = self
                 .listed_tokens
                 .range(deps.storage, None, None, Order::Descending)
                 .map(|t| t.unwrap())
                 .collect::<Vec<(String, Uint64)>>();
-
+                sorted_tokens.sort_unstable_by_key(|t| t.1);
             if sorted_tokens.len() == 0 {
                 return Err(ContractError::NoListedTokensError);
             }

@@ -1,4 +1,5 @@
-use cosmwasm_std::{Binary, Uint64};
+use cosmwasm_std::Uint64;
+use cw721_base::state::TokenInfo;
 use schemars::{JsonSchema, Map};
 use serde::{Deserialize, Serialize};
 
@@ -10,8 +11,8 @@ pub struct InstantiateMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryResp {
-    Result(Binary),
+pub enum QueryResp<T> {
+    ListedTokens(Vec<(String, Uint64, TokenInfo<T>)>),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -25,9 +26,6 @@ pub enum ExecuteMsg {
     /// Purchases the cheapest listed NFT. The value passed along with the
     /// transaction will act as the upper bound for the purchase price.
     Buy {},
-
-    /// Mark ticket has redeemed
-    RedeemTicket { address: String, ticket_id: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
