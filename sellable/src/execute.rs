@@ -80,7 +80,7 @@ where
             if sorted_tokens.len() == 0 {
                 return Err(ContractError::NoListedTokensError);
             }
-            let lowest_listed_token = sorted_tokens.get(sorted_tokens.len() - 1).unwrap();
+            let lowest_listed_token = sorted_tokens.get(0).unwrap();
             let token_info = contract
                 .tokens
                 .load(deps.storage, lowest_listed_token.0.as_str())?;
@@ -220,7 +220,7 @@ where
             if sorted_tokens.len() == 0 {
                 return Err(ContractError::NoListedTokensError);
             }
-            let lowest_listed_token = sorted_tokens.get(sorted_tokens.len() - 1).unwrap();
+            let lowest_listed_token = sorted_tokens.get(0).unwrap();
 
             check_redeemable(
                 &deps.as_ref(),
