@@ -11,7 +11,7 @@ mod tests {
     use ownable::Ownable;
     use token::Tokens;
 
-    use crate::{Sellable, errors::ContractError};
+    use crate::{errors::ContractError, Sellable};
 
     const CREATOR: &str = "cosmos188rjfzzrdxlus60zgnrvs4rg0l73hct3azv93z";
 
@@ -72,18 +72,20 @@ mod tests {
         sellable
             .try_list(&mut deps.as_mut(), env.clone(), info.clone(), listings)
             .unwrap();
-        
+
         // List a non-minted token
         let non_minted_listings = schemars::Map::from([("hello".to_string(), Uint64::new(10))]);
-        let list_result = sellable
-            .try_list(&mut deps.as_mut(), env.clone(), info.clone(), non_minted_listings);
+        let list_result = sellable.try_list(
+            &mut deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            non_minted_listings,
+        );
         match list_result {
             Ok(_) => assert!(false),
-            Err(err) => {
-                match err {
-                    ContractError::NoMetadataPresent => assert!(true),
-                    _ => assert!(false)
-                }
+            Err(err) => match err {
+                ContractError::NoMetadataPresent => assert!(true),
+                _ => assert!(false),
             },
         }
 
