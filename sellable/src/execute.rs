@@ -58,7 +58,7 @@ where
         Ok(Response::new().add_attribute("method", "list"))
     }
 
-    pub fn try_buy(&mut self, deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
+    pub fn try_buy(&mut self, deps: &mut DepsMut, info: MessageInfo) -> Result<Response, ContractError> {
         let denom_name: String;
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;

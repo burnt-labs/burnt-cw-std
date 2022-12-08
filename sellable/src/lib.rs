@@ -115,7 +115,7 @@ where
     ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::Buy {} => {
-                self.try_buy(deps.branch(), info)?;
+                self.try_buy(deps, info)?;
             }
             ExecuteMsg::List { listings } => {
                 self.try_list(deps, env, info, listings)?;
