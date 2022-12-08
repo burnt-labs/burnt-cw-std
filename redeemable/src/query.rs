@@ -8,9 +8,4 @@ impl Redeemable<'_> {
         locked_items.contains(&token_id);
         Ok(locked_items.contains(&token_id))
     }
-    pub fn is_locked(&self, deps: &Deps, token_id: String) -> StdResult<bool> {
-        let locked_items = LOCKED_ITEMS.load(deps.storage)?;
-        locked_items.contains(&token_id);
-        Ok(locked_items.contains(&token_id))
-    }
 }
