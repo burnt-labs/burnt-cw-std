@@ -35,14 +35,13 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    LockItem(String),
+    RedeemItem(String),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    IsRedeemed(String),
-    IsLocked(String),
+    IsRedeemed(String)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -77,8 +76,8 @@ impl Module for Redeemable<'_> {
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
         match msg {
-            ExecuteMsg::LockItem(token_id) => {
-                self.lock_token(deps, env, info, token_id)?;
+            ExecuteMsg::RedeemItem(token_id) => {
+                self.redeem_item(deps, env, info, token_id)?;
             }
         }
         Ok(Response::new())
@@ -86,10 +85,6 @@ impl Module for Redeemable<'_> {
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {
         match msg {
-            QueryMsg::IsLocked(token_id) => {
-                let is_redeemed = self.is_redeemed(deps, token_id).unwrap_or(false);
-                Ok(QueryResp::Result(is_redeemed))
-            }
             QueryMsg::IsRedeemed(token_id) => {
                 let is_redeemed = self.is_redeemed(deps, token_id).unwrap_or(false);
                 Ok(QueryResp::Result(is_redeemed))

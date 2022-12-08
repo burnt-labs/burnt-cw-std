@@ -2,7 +2,7 @@ use crate::{errors::ContractError, state::LOCKED_ITEMS, Redeemable};
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response};
 
 impl Redeemable<'_> {
-    pub fn lock_token(
+    pub fn redeem_item(
         &mut self,
         deps: &mut DepsMut,
         _env: Env,
