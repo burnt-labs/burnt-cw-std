@@ -292,7 +292,7 @@ fn check_redeemable(
     redeemable: &Redeemable,
 ) -> Result<(), ContractError> {
     // confirm token aren't locked or redeemed
-    let locked_tokens = redeemable.locked_tokens.load(deps.storage)?;
+    let locked_tokens = redeemable.locked_items.load(deps.storage)?;
     if locked_tokens.contains(token_id) {
         return Err(ContractError::TicketRedeemed);
     }

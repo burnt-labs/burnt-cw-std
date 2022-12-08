@@ -14,13 +14,13 @@ use burnt_glue::module::Module;
 use burnt_glue::response::Response;
 
 pub struct Redeemable<'a> {
-    pub locked_tokens: Item<'a, Set<String>>,
+    pub locked_items: Item<'a, Set<String>>,
 }
 
 impl Default for Redeemable<'_> {
     fn default() -> Self {
         Self {
-            locked_tokens: LOCKED_ITEMS,
+            locked_items: LOCKED_ITEMS,
         }
     }
 }
@@ -28,7 +28,7 @@ impl Default for Redeemable<'_> {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
-    locked_tokens: Set<String>,
+    locked_items: Set<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -63,7 +63,7 @@ impl Module for Redeemable<'_> {
         _info: &MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
-        self.locked_tokens.save(deps.storage, &msg.locked_tokens)?;
+        self.locked_items.save(deps.storage, &msg.locked_items)?;
         Ok(Response::new())
     }
 
