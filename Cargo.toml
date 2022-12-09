@@ -20,6 +20,6 @@ thiserror = { version = "1.0.31" }
 burnt-glue = "0.2.2"
 semver = "1.0.14"
 cw721-base = "0.16.0"
-ownable = { path = "./ownable" }
-token = { path = "./token" }
-redeemable = { path = "./redeemable" }
+ownable = { path = "./ownable", version = "0.1.0" }
+token = { path = "./token", version = "0.1.0" }
+redeemable = { path = "./redeemable", version = "0.1.0" }
