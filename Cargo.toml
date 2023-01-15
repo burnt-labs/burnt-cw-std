@@ -4,7 +4,9 @@ members = [
     "metadata",
     "token",
     "sellable",
-    "redeemable"
+    "redeemable",
+    "composability-test-one",
+    "composability-test-two"
 ]
 
 [workspace.dependencies]
@@ -23,3 +25,4 @@ cw721-base = "0.16.0"
 ownable = { path = "./ownable" }
 token = { path = "./token" }
 redeemable = { path = "./redeemable" }
+composability-test-two = { path = "./composability-test-two" }
