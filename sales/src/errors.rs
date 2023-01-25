@@ -25,5 +25,5 @@ pub enum ContractError {
     WrongFundError,
 
     #[error("Insufficient Funds Error")]
-    InsufficientFundsError
+    InsufficientFundsError,
 }

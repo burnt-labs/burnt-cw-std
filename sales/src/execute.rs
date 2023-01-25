@@ -1,8 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
-use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64, BankMsg, CosmosMsg};
-use cw721_base::MintMsg;
+use cosmwasm_std::{
+    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64,
+};
+use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
 use ownable::Ownable;
 use sellable::Sellable;
@@ -38,12 +40,7 @@ where
         info: &MessageInfo,
     ) -> Result<Response, ContractError> {
         let ownable = &self.sellable.borrow().ownable;
-        check_ownable(
-            &deps.as_ref(),
-            &env,
-            &info,
-            &ownable.borrow(),
-        )?;
+        check_ownable(&deps.as_ref(), &env, &info, &ownable.borrow())?;
         // make sure no active primary sale
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
         for sale in &primary_sales {
@@ -98,20 +95,17 @@ where
                     } else if sale.price.contains(&info.funds[0]) {
                         return Err(ContractError::WrongFundError);
                     } else {
-                        paying_fund = sale.price.iter().find(|coin| coin.denom == info.funds[0].denom).unwrap();
+                        paying_fund = sale
+                            .price
+                            .iter()
+                            .find(|coin| coin.denom == info.funds[0].denom)
+                            .unwrap();
                         if paying_fund.amount.gt(&info.funds[0].amount) {
                             return Err(ContractError::InsufficientFundsError);
                         }
                     }
-                    // buy the item
-                    self.sellable
-                        .borrow()
-                        .tokens
-                        .borrow_mut()
-                        .contract
-                        .mint(deps.branch(), env.clone(), info.clone(), mint_msg)
-                        .map_err(|err| ContractError::TokenModuleError(err))?;
-
+                    // mint the item
+                    let mut response = self.mint(deps, env, &info, mint_msg).unwrap();
                     sale.tokens_minted = sale
                         .tokens_minted
                         .checked_add(Uint64::from(1 as u8))
@@ -120,21 +114,33 @@ where
                     if sale.tokens_minted.eq(&sale.total_supply) {
                         sale.disabled = true;
                     }
-                    let mut response = Response::new();
                     // send funds to creator
                     let message = BankMsg::Send {
-                        to_address: ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string(),
-                        amount: vec![Coin::new(paying_fund.amount.u128(), paying_fund.denom.clone())],
+                        to_address: ownable
+                            .borrow()
+                            .get_owner(&deps.as_ref())
+                            .unwrap()
+                            .to_string(),
+                        amount: vec![Coin::new(
+                            paying_fund.amount.u128(),
+                            paying_fund.denom.clone(),
+                        )],
                     };
                     let cosmos_msg = CosmosMsg::Bank(message);
                     response = response.add_message(cosmos_msg);
 
                     if paying_fund.amount.lt(&info.funds[0].amount) {
                         // refund user back extra funds
-                        let refund_amount = info.funds[0].amount.checked_sub(paying_fund.amount).unwrap();
+                        let refund_amount = info.funds[0]
+                            .amount
+                            .checked_sub(paying_fund.amount)
+                            .unwrap();
                         let refund_message = BankMsg::Send {
                             to_address: info.sender.to_string(),
-                            amount: vec![Coin::new(refund_amount.u128(), paying_fund.denom.clone())],
+                            amount: vec![Coin::new(
+                                refund_amount.u128(),
+                                paying_fund.denom.clone(),
+                            )],
                         };
                         let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                         response = response.add_message(refund_cosmos_msg);
@@ -145,6 +151,48 @@ where
             }
         }
         return Err(ContractError::NoOngoingPrimarySaleError);
+    }
+
+    pub fn mint(
+        &self,
+        deps: &mut DepsMut,
+        _env: Env,
+        info: &MessageInfo,
+        msg: MintMsg<T>,
+    ) -> Result<Response, ContractError> {
+        // create the token
+        let token = TokenInfo {
+            owner: deps.api.addr_validate(&msg.owner)?,
+            approvals: vec![],
+            token_uri: msg.token_uri,
+            extension: msg.extension,
+        };
+        {
+            self.sellable
+                .borrow()
+                .tokens
+                .borrow_mut()
+                .contract
+                .tokens
+                .update(deps.storage, &msg.token_id, |old| match old {
+                    Some(_) => Err(ContractError::TokenModuleError(
+                        cw721_base::ContractError::Claimed {},
+                    )),
+                    None => Ok(token),
+                })?;
+        }
+        self.sellable
+            .borrow()
+            .tokens
+            .borrow_mut()
+            .contract
+            .increment_tokens(deps.storage)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "mint")
+            .add_attribute("minter", &info.sender)
+            .add_attribute("owner", msg.owner)
+            .add_attribute("token_id", msg.token_id))
     }
 }
 
