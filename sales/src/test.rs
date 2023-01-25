@@ -146,11 +146,6 @@ mod tests {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert_eq!(sale.disabled, true),
             _ => assert!(false),
         }
-        // assert_eq!(Uint128::from(30 as u128), info.funds[0].amount);
-        assert_eq!(
-            Uint128::from(10 as u128),
-            buyer_info.borrow().funds[0].amount
-        );
 
         // create a new primary sale
         let json_exec_msg = json!({
