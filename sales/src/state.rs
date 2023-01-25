@@ -9,7 +9,7 @@ pub struct PrimarySale {
     pub tokens_minted: Uint64,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
-    pub price: Coin,
+    pub price: Vec<Coin>,
     pub disabled: bool, // is sale still on ?
 }
 

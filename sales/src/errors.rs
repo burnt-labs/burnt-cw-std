@@ -9,12 +9,21 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized,
 
-    #[error("Ongoing Primary Sale")]
-    OngoingPrimarySale,
+    #[error("Ongoing Primary Sale Error")]
+    OngoingPrimarySaleError,
 
-    #[error("No Active Primary Sale")]
-    NoOngoingPrimarySale,
+    #[error("No Active Primary Sale Error")]
+    NoOngoingPrimarySaleError,
 
     #[error("Token Module Error")]
     TokenModuleError(cw721_base::ContractError),
+
+    #[error("Multiple Funds Error")]
+    MultipleFundsError,
+
+    #[error("Wrong Fund Denom Error")]
+    WrongFundError,
+
+    #[error("Insufficient Funds Error")]
+    InsufficientFundsError
 }

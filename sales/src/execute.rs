@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
-use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64};
+use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64, BankMsg, CosmosMsg};
 use cw721_base::MintMsg;
 use cw_storage_plus::Item;
 use ownable::Ownable;
@@ -32,22 +32,23 @@ where
         total_supply: Uint64,
         start_time: Uint64,
         end_time: Uint64,
-        price: Coin,
+        price: Vec<Coin>,
         deps: &mut DepsMut,
         env: Env,
         info: &MessageInfo,
     ) -> Result<Response, ContractError> {
+        let ownable = &self.sellable.borrow().ownable;
         check_ownable(
             &deps.as_ref(),
             &env,
             &info,
-            &self.sellable.borrow().ownable.borrow(),
+            &ownable.borrow(),
         )?;
         // make sure no active primary sale
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
         for sale in &primary_sales {
             if !sale.disabled || sale.end_time.gt(&env.block.time) {
-                return Err(ContractError::OngoingPrimarySale);
+                return Err(ContractError::OngoingPrimarySaleError);
             }
         }
         let primary_sale = PrimarySale {
@@ -73,7 +74,7 @@ where
                 return Ok(Response::default());
             }
         }
-        return Err(ContractError::NoOngoingPrimarySale);
+        return Err(ContractError::NoOngoingPrimarySaleError);
     }
 
     pub fn buy_item(
@@ -89,9 +90,22 @@ where
         for sale in primary_sales.iter_mut() {
             if !sale.disabled && sale.end_time.gt(&env.block.time) {
                 if sale.tokens_minted.lt(&sale.total_supply) {
+                    // check if enough fee was sent
+                    let ownable = &self.sellable.borrow().ownable;
+                    let paying_fund: &Coin;
+                    if info.funds.len() > 1 {
+                        return Err(ContractError::MultipleFundsError);
+                    } else if sale.price.contains(&info.funds[0]) {
+                        return Err(ContractError::WrongFundError);
+                    } else {
+                        paying_fund = sale.price.iter().find(|coin| coin.denom == info.funds[0].denom).unwrap();
+                        if paying_fund.amount.gt(&info.funds[0].amount) {
+                            return Err(ContractError::InsufficientFundsError);
+                        }
+                    }
                     // buy the item
                     self.sellable
-                        .borrow_mut()
+                        .borrow()
                         .tokens
                         .borrow_mut()
                         .contract
@@ -106,12 +120,31 @@ where
                     if sale.tokens_minted.eq(&sale.total_supply) {
                         sale.disabled = true;
                     }
+                    let mut response = Response::new();
+                    // send funds to creator
+                    let message = BankMsg::Send {
+                        to_address: ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string(),
+                        amount: vec![Coin::new(paying_fund.amount.u128(), paying_fund.denom.clone())],
+                    };
+                    let cosmos_msg = CosmosMsg::Bank(message);
+                    response = response.add_message(cosmos_msg);
+
+                    if paying_fund.amount.lt(&info.funds[0].amount) {
+                        // refund user back extra funds
+                        let refund_amount = info.funds[0].amount.checked_sub(paying_fund.amount).unwrap();
+                        let refund_message = BankMsg::Send {
+                            to_address: info.sender.to_string(),
+                            amount: vec![Coin::new(refund_amount.u128(), paying_fund.denom.clone())],
+                        };
+                        let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
+                        response = response.add_message(refund_cosmos_msg);
+                    }
                     self.primary_sales.save(deps.storage, &primary_sales)?;
-                    return Ok(Response::default());
+                    return Ok(response);
                 }
             }
         }
-        return Err(ContractError::NoOngoingPrimarySale);
+        return Err(ContractError::NoOngoingPrimarySaleError);
     }
 }
 

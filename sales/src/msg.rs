@@ -23,7 +23,7 @@ pub enum ExecuteMsg<T> {
         total_supply: Uint64,
         start_time: Uint64, // timestamp in seconds
         end_time: Uint64,   // timestamp in seconds
-        price: Coin,
+        price: Vec<Coin>,
     },
     HaltSale {},
     BuyItem(MintMsg<T>),

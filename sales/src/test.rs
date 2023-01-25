@@ -5,7 +5,7 @@ mod tests {
     use burnt_glue::module::Module;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        Addr, Empty, Timestamp,
+        Addr, Empty, Timestamp, Coin, Uint128,
     };
     use cw_storage_plus::{Item, Map};
     use ownable::Ownable;
@@ -20,12 +20,13 @@ mod tests {
     use serde_json::{from_str, json};
 
     const CREATOR: &str = "cosmos188rjfzzrdxlus60zgnrvs4rg0l73hct3azv93z";
+    const USER: &str = "burnt188rjfzzrdxlus60zgnrvs4rg0l73hct3mlvdpe";
 
     #[test]
     fn add_primary_sales() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
-        let info = mock_info(CREATOR, &[]);
+        let info = mock_info(CREATOR, &[Coin::new(20, "USDC")]);
 
         let sellable = Sellable::<Empty, Empty, Empty, Empty>::new(
             Rc::new(RefCell::new(Tokens::default())),
@@ -78,10 +79,10 @@ mod tests {
                 "total_supply": "1",
                 "start_time": "1674567586",
                 "end_time": "1675567587",
-                "price": {
+                "price": [{
                     "denom": "USDC",
                     "amount": "10"
-                }
+                }]
             }
         })
         .to_string();
@@ -128,9 +129,10 @@ mod tests {
                 }
         })
         .to_string();
+        let buyer_info = mock_info(USER, &[Coin::new(20, "USDC")]);
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         sales
-            .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
+            .execute(&mut deps.as_mut(), env.clone(), buyer_info.clone(), execute_msg)
             .expect("item bought");
         let active_primary_sale = sales
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
@@ -139,6 +141,8 @@ mod tests {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert_eq!(sale.disabled, true),
             _ => assert!(false),
         }
+        assert_eq!(Uint128::from(30 as u128), info.funds[0].amount);
+        assert_eq!(Uint128::from(10 as u128), buyer_info.funds[0].amount);
 
         // create a new primary sale
         let json_exec_msg = json!({
@@ -146,10 +150,10 @@ mod tests {
                 "total_supply": "1",
                 "start_time": "1676567587",
                 "end_time": "1677567587",
-                "price": {
+                "price": [{
                     "denom": "USDC",
                     "amount": "10"
-                }
+                }]
             }
         })
         .to_string();
