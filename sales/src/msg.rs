@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Uint64};
+use cosmwasm_std::{Coin, Uint64, Timestamp};
 use cw721_base::MintMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -23,6 +23,19 @@ pub struct CreatePrimarySale {
     pub start_time: Uint64, // timestamp in seconds
     pub end_time: Uint64,   // timestamp in seconds
     pub price: Vec<Coin>,
+}
+
+impl Into<PrimarySale> for CreatePrimarySale {
+    fn into(self) -> PrimarySale {
+        PrimarySale {
+            total_supply: self.total_supply,
+            tokens_minted: Uint64::from(0 as u8),
+            start_time: Timestamp::from_seconds(self.start_time.u64()),
+            end_time: Timestamp::from_seconds(self.end_time.u64()),
+            price: self.price,
+            disabled: false,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

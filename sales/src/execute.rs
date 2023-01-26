@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
 use cosmwasm_std::{
-    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp,
+    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo,
     Uint64,
 };
 use cw721_base::{state::TokenInfo, MintMsg};
@@ -48,19 +48,11 @@ where
         // make sure no active primary sale
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
         for sale in &primary_sales {
-            if !sale.disabled || sale.end_time.gt(&env.block.time) {
-                return Err(ContractError::OngoingPrimarySaleError);
+            if msg.start_time.le(&Uint64::from(sale.end_time.seconds())) {
+                return Err(ContractError::InvalidPrimarySaleParamError("start time".to_string()));
             }
         }
-        let primary_sale = PrimarySale {
-            total_supply: msg.total_supply,
-            tokens_minted: Uint64::from(0 as u8),
-            start_time: Timestamp::from_seconds(msg.start_time.u64()),
-            end_time: Timestamp::from_seconds(msg.end_time.u64()),
-            price: msg.price,
-            disabled: false,
-        };
-        primary_sales.push(primary_sale);
+        primary_sales.push(msg.into());
         self.primary_sales.save(deps.storage, &primary_sales)?;
         return Ok(Response::default());
     }
