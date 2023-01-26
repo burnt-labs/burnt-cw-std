@@ -5,7 +5,7 @@ mod tests {
     use burnt_glue::module::Module;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        Addr, Coin, Empty, Timestamp, Uint128,
+        Addr, Coin, Empty, Timestamp
     };
     use cw_storage_plus::{Item, Map};
     use ownable::Ownable;
