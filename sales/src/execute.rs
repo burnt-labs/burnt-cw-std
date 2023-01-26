@@ -1,17 +1,14 @@
 use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
-use cosmwasm_std::{
-    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo,
-    Uint64,
-};
+use cosmwasm_std::{BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
 use ownable::Ownable;
 use sellable::Sellable;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{errors::ContractError, msg::CreatePrimarySale, state::PrimarySale, Sales};
+use crate::{errors::ContractError, msg::CreatePrimarySale, PrimarySale, Sales};
 
 impl<'a, T, C, E, Q> Sales<'a, T, C, E, Q>
 where
@@ -44,12 +41,14 @@ where
             ));
         }
         let ownable = &self.sellable.borrow().ownable;
-        check_ownable(&deps.as_ref(), &env, &info, &ownable.borrow())?;
+        assert_owner(&deps.as_ref(), &env, &info, &ownable.borrow())?;
         // make sure no active primary sale
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
         for sale in &primary_sales {
             if msg.start_time.le(&Uint64::from(sale.end_time.seconds())) {
-                return Err(ContractError::InvalidPrimarySaleParamError("start time".to_string()));
+                return Err(ContractError::InvalidPrimarySaleParamError(
+                    "start time".to_string(),
+                ));
             }
         }
         primary_sales.push(msg.into());
@@ -192,7 +191,7 @@ where
     }
 }
 
-fn check_ownable(
+fn assert_owner(
     deps: &Deps,
     _env: &Env,
     info: &MessageInfo,

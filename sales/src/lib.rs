@@ -2,12 +2,12 @@ pub mod errors;
 pub mod execute;
 pub mod msg;
 pub mod query;
-pub mod state;
 mod test;
 
 use std::{cell::RefCell, rc::Rc};
 
 use cw_storage_plus::Item;
+use schemars::JsonSchema;
 use sellable::Sellable;
 
 use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo};
@@ -18,7 +18,18 @@ use serde::Serialize;
 
 use burnt_glue::module::Module;
 use burnt_glue::response::Response;
-use state::{PrimarySale, PRIMARY_SALES};
+use cosmwasm_std::{Coin, Timestamp, Uint64};
+use serde::Deserialize;
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
+pub struct PrimarySale {
+    pub total_supply: Uint64,
+    pub tokens_minted: Uint64,
+    pub start_time: Timestamp,
+    pub end_time: Timestamp,
+    pub price: Vec<Coin>,
+    pub disabled: bool, // is sale still on ?
+}
 
 pub struct Sales<'a, T, C, E, Q>
 where
@@ -41,7 +52,7 @@ where
     fn default() -> Self {
         Self {
             sellable: Rc::new(RefCell::new(Sellable::default())),
-            primary_sales: PRIMARY_SALES,
+            primary_sales: Item::new("primary_sales"),
         }
     }
 }

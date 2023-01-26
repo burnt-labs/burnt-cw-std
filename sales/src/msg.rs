@@ -1,9 +1,9 @@
-use cosmwasm_std::{Coin, Uint64, Timestamp};
+use cosmwasm_std::{Coin, Timestamp, Uint64};
 use cw721_base::MintMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::state::PrimarySale;
+use crate::PrimarySale;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
