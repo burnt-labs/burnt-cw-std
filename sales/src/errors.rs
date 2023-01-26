@@ -26,4 +26,7 @@ pub enum ContractError {
 
     #[error("Insufficient Funds")]
     InsufficientFundsError,
+
+    #[error("Invalid Primary Sale parameter")]
+    InvalidPrimarySaleParamError(String),
 }

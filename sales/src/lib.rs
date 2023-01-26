@@ -78,14 +78,7 @@ where
         msg: ExecuteMsg<T>,
     ) -> Result<Response, Self::Error> {
         match msg {
-            ExecuteMsg::PrimarySale {
-                total_supply,
-                start_time,
-                end_time,
-                price,
-            } => {
-                self.add_primary_sales(total_supply, start_time, end_time, price, deps, env, &info)
-            }
+            ExecuteMsg::PrimarySale(msg) => self.add_primary_sales(msg, deps, env, &info),
 
             ExecuteMsg::HaltSale {} => self.halt_sale(deps, env),
 

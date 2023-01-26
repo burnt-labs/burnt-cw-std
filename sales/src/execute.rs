@@ -2,7 +2,8 @@ use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
 use cosmwasm_std::{
-    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64,
+    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp,
+    Uint64,
 };
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
@@ -10,7 +11,7 @@ use ownable::Ownable;
 use sellable::Sellable;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{errors::ContractError, state::PrimarySale, Sales};
+use crate::{errors::ContractError, msg::CreatePrimarySale, state::PrimarySale, Sales};
 
 impl<'a, T, C, E, Q> Sales<'a, T, C, E, Q>
 where
@@ -31,14 +32,17 @@ where
 
     pub fn add_primary_sales(
         &mut self,
-        total_supply: Uint64,
-        start_time: Uint64,
-        end_time: Uint64,
-        price: Vec<Coin>,
+        msg: CreatePrimarySale,
         deps: &mut DepsMut,
         env: Env,
         info: &MessageInfo,
     ) -> Result<Response, ContractError> {
+        // basic validation on CreatePrimarySale struct
+        if msg.start_time.lt(&Uint64::from(env.block.time.seconds())) {
+            return Err(ContractError::InvalidPrimarySaleParamError(
+                "start time".to_string(),
+            ));
+        }
         let ownable = &self.sellable.borrow().ownable;
         check_ownable(&deps.as_ref(), &env, &info, &ownable.borrow())?;
         // make sure no active primary sale
@@ -49,11 +53,11 @@ where
             }
         }
         let primary_sale = PrimarySale {
-            total_supply,
+            total_supply: msg.total_supply,
             tokens_minted: Uint64::from(0 as u8),
-            start_time: Timestamp::from_seconds(start_time.u64()),
-            end_time: Timestamp::from_seconds(end_time.u64()),
-            price,
+            start_time: Timestamp::from_seconds(msg.start_time.u64()),
+            end_time: Timestamp::from_seconds(msg.end_time.u64()),
+            price: msg.price,
             disabled: false,
         };
         primary_sales.push(primary_sale);

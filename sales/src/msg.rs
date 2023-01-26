@@ -18,13 +18,17 @@ pub enum QueryResp {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 #[serde(rename_all = "snake_case")]
+pub struct CreatePrimarySale {
+    pub total_supply: Uint64,
+    pub start_time: Uint64, // timestamp in seconds
+    pub end_time: Uint64,   // timestamp in seconds
+    pub price: Vec<Coin>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg<T> {
-    PrimarySale {
-        total_supply: Uint64,
-        start_time: Uint64, // timestamp in seconds
-        end_time: Uint64,   // timestamp in seconds
-        price: Vec<Coin>,
-    },
+    PrimarySale(CreatePrimarySale),
     HaltSale {},
     BuyItem(MintMsg<T>),
 }
