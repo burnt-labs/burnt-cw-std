@@ -60,7 +60,7 @@ mod tests {
             Sales::new(Rc::new(RefCell::new(sellable)), Item::new("primary_sales"));
         // instantiate sale module
         sales
-            .instantiate(&mut deps.as_mut(), &env, &info, InstantiateMsg {})
+            .instantiate(&mut deps.as_mut(), &env, &info, InstantiateMsg { hub: CREATOR.to_string()})
             .expect("sale module instantiated");
         // get all primary sales
         let query_msg = QueryMsg::PrimarySales {};

@@ -10,7 +10,7 @@ use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use sellable::Sellable;
 
-use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo};
+use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo, Addr};
 use errors::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use serde::de::DeserializeOwned;
@@ -41,6 +41,8 @@ where
     pub sellable: Rc<RefCell<Sellable<'a, T, C, E, Q>>>,
     pub primary_sales: Item<'a, Vec<PrimarySale>>,
 }
+
+pub const HUB_CONTRACT: Item<Addr> = Item::new("hub_contract");
 
 impl<'a, T, C, E, Q> Default for Sales<'a, T, C, E, Q>
 where
@@ -75,9 +77,11 @@ where
         deps: &mut DepsMut,
         _env: &Env,
         _info: &MessageInfo,
-        _msg: InstantiateMsg,
+        msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
+        let hub_addr = deps.api.addr_validate(&msg.hub)?;
         self.primary_sales.save(deps.storage, &vec![])?;
+        HUB_CONTRACT.save(deps.storage, &hub_addr)?;
         Ok(Response::default())
     }
 
