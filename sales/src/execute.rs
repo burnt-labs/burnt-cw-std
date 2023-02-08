@@ -43,7 +43,7 @@ where
         let ownable = &self.sellable.borrow().ownable;
         assert_owner(&deps.as_ref(), &env, &info, &ownable.borrow())?;
         // make sure no active primary sale
-        let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
+        let mut primary_sales = self.primary_sales.load(deps.storage).unwrap_or(vec![]);
         for sale in &primary_sales {
             if msg.start_time.le(&Uint64::from(sale.end_time.seconds())) {
                 return Err(ContractError::InvalidPrimarySaleParamError(
@@ -60,7 +60,9 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage)?;
 
         for sale in primary_sales.iter_mut() {
-            if !sale.disabled || sale.end_time.gt(&env.block.time) {
+            if (!sale.disabled && sale.end_time.gt(&env.block.time))
+                || sale.end_time.gt(&env.block.time)
+            {
                 sale.disabled = true;
                 self.primary_sales.save(deps.storage, &primary_sales)?;
                 return Ok(Response::default());
