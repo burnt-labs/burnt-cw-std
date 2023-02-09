@@ -8,7 +8,7 @@ use crate::PrimarySale;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct InstantiateMsg {
-    pub sales: Option<CreatePrimarySale>,
+    pub sale: Option<CreatePrimarySale>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
