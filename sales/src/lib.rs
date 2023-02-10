@@ -73,11 +73,15 @@ where
     fn instantiate(
         &mut self,
         deps: &mut DepsMut,
-        _env: &Env,
-        _info: &MessageInfo,
-        _msg: InstantiateMsg,
+        env: &Env,
+        info: &MessageInfo,
+        msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
-        self.primary_sales.save(deps.storage, &vec![])?;
+        if let Some(sale) = msg.sales {
+            self.add_primary_sales(sale, deps, env.clone(), info)?;
+        } else {
+            self.primary_sales.save(deps.storage, &vec![])?;
+        }
         Ok(Response::default())
     }
 

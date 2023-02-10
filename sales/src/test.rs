@@ -5,7 +5,7 @@ mod tests {
     use burnt_glue::module::Module;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        Addr, Coin, Empty, Timestamp,
+        Addr, Coin, Empty, Timestamp, Uint128, Uint64,
     };
     use cw_storage_plus::{Item, Map};
     use ownable::Ownable;
@@ -13,7 +13,7 @@ mod tests {
     use token::Tokens;
 
     use crate::{
-        msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+        msg::{CreatePrimarySale, ExecuteMsg, InstantiateMsg, QueryMsg},
         Sales,
     };
     use cw721_base::msg::InstantiateMsg as cw721_baseInstantiateMsg;
@@ -59,8 +59,19 @@ mod tests {
         let mut sales: Sales<Empty, Empty, Empty, Empty> =
             Sales::new(Rc::new(RefCell::new(sellable)), Item::new("primary_sales"));
         // instantiate sale module
+        let sales_instantiate_msg = InstantiateMsg {
+            sales: Some(CreatePrimarySale {
+                total_supply: Uint64::from(1 as u64),
+                start_time: Uint64::from(1664567586 as u64),
+                end_time: Uint64::from(1665567587 as u64),
+                price: vec![Coin {
+                    denom: "uturnt".to_string(),
+                    amount: Uint128::from(10 as u64),
+                }],
+            }),
+        };
         sales
-            .instantiate(&mut deps.as_mut(), &env, &info, InstantiateMsg {})
+            .instantiate(&mut deps.as_mut(), &env, &info, sales_instantiate_msg)
             .expect("sale module instantiated");
         // get all primary sales
         let query_msg = QueryMsg::PrimarySales {};
@@ -69,7 +80,7 @@ mod tests {
             .unwrap();
         match primary_sales {
             crate::msg::QueryResp::PrimarySales(primary_sales) => {
-                assert_eq!(primary_sales.len(), 0)
+                assert_eq!(primary_sales.len(), 1)
             }
             _ => assert!(false),
         }
@@ -98,6 +109,7 @@ mod tests {
             )
             .expect_err("primary sales should not be added");
         // set block time
+        env.block.time = Timestamp::from_seconds(1666567587 as u64);
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("primary sales added");
@@ -109,7 +121,7 @@ mod tests {
             .unwrap();
         match primary_sales {
             crate::msg::QueryResp::PrimarySales(primary_sales) => {
-                assert_eq!(primary_sales.len(), 1)
+                assert_eq!(primary_sales.len(), 2)
             }
             _ => assert!(false),
         }

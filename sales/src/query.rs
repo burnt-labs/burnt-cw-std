@@ -18,7 +18,9 @@ where
     pub fn active_primary_sales(&self, deps: &Deps, env: Env) -> StdResult<QueryResp> {
         let primary_sales = self.primary_sales.load(deps.storage)?;
         for sale in primary_sales {
-            if !sale.disabled || sale.end_time.gt(&env.block.time) {
+            if (!sale.disabled && sale.end_time.gt(&env.block.time))
+                || sale.end_time.gt(&env.block.time)
+            {
                 return Ok(QueryResp::ActivePrimarySale(Option::Some(sale)));
             }
         }
