@@ -77,7 +77,7 @@ where
         info: &MessageInfo,
         msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
-        if let Some(sale) = msg.sales {
+        if let Some(sale) = msg.sale {
             self.add_primary_sales(sale, deps, env.clone(), info)?;
         } else {
             self.primary_sales.save(deps.storage, &vec![])?;
