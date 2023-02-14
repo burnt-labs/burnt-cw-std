@@ -60,7 +60,7 @@ mod tests {
             Sales::new(Rc::new(RefCell::new(sellable)), Item::new("primary_sales"));
         // instantiate sale module
         let sales_instantiate_msg = InstantiateMsg {
-            sales: Some(CreatePrimarySale {
+            sale: Some(CreatePrimarySale {
                 total_supply: Uint64::from(1 as u64),
                 start_time: Uint64::from(1664567586 as u64),
                 end_time: Uint64::from(1665567587 as u64),
