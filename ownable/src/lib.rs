@@ -24,9 +24,7 @@ impl<'a> Default for Ownable<'a> {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct InstantiateMsg {
-    pub owner: Addr,
-}
+pub struct InstantiateMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -89,10 +87,10 @@ impl<'a> Module for Ownable<'a> {
         &mut self,
         deps: &mut DepsMut,
         _: &Env,
-        _: &MessageInfo,
-        msg: Self::InstantiateMsg,
+        info: &MessageInfo,
+        _: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
-        self.owner.save(deps.storage, &msg.owner)?;
+        self.owner.save(deps.storage, &info.sender)?;
 
         Ok(Response::new())
     }
