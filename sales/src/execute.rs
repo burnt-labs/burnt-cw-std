@@ -87,8 +87,11 @@ where
                     // check if enough fee was sent
                     let ownable = &self.sellable.borrow().ownable;
                     let paying_fund: &Coin;
-                    if info.funds.len() > 1 {
+                    if info.funds.len() == 0 {
+                        // TODO: make sure funds are available 
                         return Err(ContractError::MultipleFundsError);
+                    } else if info.funds.len() > 1 {
+                        return Err(ContractError::InsufficientFundsError);
                     } else if sale.price.contains(&info.funds[0]) {
                         return Err(ContractError::WrongFundError);
                     } else {
@@ -100,7 +103,7 @@ where
                         if paying_fund.amount.gt(&info.funds[0].amount) {
                             return Err(ContractError::InsufficientFundsError);
                         }
-                    }
+                    } 
                     // mint the item
                     let mut response = self.mint(deps, env, &info, mint_msg).unwrap();
                     sale.tokens_minted = sale
