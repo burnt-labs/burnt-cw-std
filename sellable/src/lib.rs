@@ -113,15 +113,11 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        let res = match msg {
+        return match msg {
             ExecuteMsg::Buy {} => self.try_buy(deps, info),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, info, token_id),
         };
-        res.map(|resp| burnt_glue::response::Response {
-            response: resp,
-            data: serde_json::Value::Null,
-        })
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {
@@ -164,15 +160,11 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        let res = match msg {
+        return match msg {
             ExecuteMsg::Buy {} => self.try_buy(deps.branch(), &env, info),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, &env, info, token_id),
         };
-        res.map(|resp| burnt_glue::response::Response {
-            response: resp,
-            data: serde_json::Value::Null,
-        })
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {

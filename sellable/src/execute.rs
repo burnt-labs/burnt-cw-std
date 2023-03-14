@@ -1,8 +1,9 @@
 use std::{cell::RefCell, ops::Sub, rc::Rc};
 
 use crate::{errors::ContractError, RSellable, Sellable};
+use burnt_glue::response::Response;
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, Uint128,
+    BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Uint128,
 };
 use cw_storage_plus::Map;
 use ownable::Ownable;
@@ -35,7 +36,7 @@ where
         env: Env,
         info: MessageInfo,
         listings: schemars::Map<String, Coin>,
-    ) -> Result<Response<Binary>, ContractError> {
+    ) -> Result<Response, ContractError> {
         let ownable = &self.ownable.borrow();
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
 
@@ -63,7 +64,7 @@ where
         deps: &mut DepsMut,
         info: MessageInfo,
         token_id: String,
-    ) -> Result<Response<Binary>, ContractError> {
+    ) -> Result<Response, ContractError> {
         // check if enough fee was sent
         if info.funds.len() == 0 {
             return Err(ContractError::NoFundsPresent);
@@ -126,7 +127,7 @@ where
         &mut self,
         deps: &mut DepsMut,
         info: MessageInfo,
-    ) -> Result<Response<Binary>, ContractError> {
+    ) -> Result<Response, ContractError> {
         let denom_name: String;
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;
@@ -233,7 +234,7 @@ where
         env: Env,
         info: MessageInfo,
         listings: schemars::Map<String, Coin>,
-    ) -> Result<Response<Binary>, ContractError> {
+    ) -> Result<Response, ContractError> {
         let ownable = &self.ownable.borrow();
         let redeemable = &self.redeemable.borrow();
 
@@ -265,7 +266,7 @@ where
         env: &Env,
         info: MessageInfo,
         token_id: String,
-    ) -> Result<Response<Binary>, ContractError> {
+    ) -> Result<Response, ContractError> {
         // check if enough fee was sent
         if info.funds.len() == 0 {
             return Err(ContractError::NoFundsPresent);
@@ -331,7 +332,7 @@ where
         deps: DepsMut,
         env: &Env,
         info: MessageInfo,
-    ) -> Result<Response<Binary>, ContractError> {
+    ) -> Result<Response, ContractError> {
         let denom_name: String;
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;

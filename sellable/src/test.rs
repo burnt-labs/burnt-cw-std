@@ -220,9 +220,9 @@ mod tests {
         let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
         assert_eq!(result.tokens.len(), 0);
 
-        assert_eq!(buy_resp.messages.len(), 2);
+        assert_eq!(buy_resp.response.messages.len(), 2);
         assert_eq!(
-            buy_resp.messages[0].msg,
+            buy_resp.response.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: CREATOR.to_string(),
                 amount: vec![Coin {
@@ -232,7 +232,7 @@ mod tests {
             })
         );
         assert_eq!(
-            buy_resp.messages[1].msg,
+            buy_resp.response.messages[1].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: BUYER.to_string(),
                 amount: vec![Coin {
