@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint64};
+use cosmwasm_std::{StdError, Uint128};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -22,10 +22,22 @@ pub enum ContractError {
     NoListedTokensError,
 
     #[error("Limit of {limit} below lowest offer of {lowest_price}")]
-    LimitBelowLowestOffer { limit: Uint64, lowest_price: Uint64 },
+    LimitBelowLowestOffer {
+        limit: Uint128,
+        lowest_price: Uint128,
+    },
+
+    #[error("Funds of {fund} below seat price of {seat_price}")]
+    InsufficientFundsError { fund: Uint128, seat_price: Uint128 },
 
     #[error("No relevant funds present in transaction")]
     NoFundsPresent,
+
+    #[error("Multiple funds present")]
+    MultipleFundsError,
+
+    #[error("Wrong fund in transaction")]
+    WrongFundError,
 
     #[error("{0}")]
     BaseError(#[from] cw721_base::ContractError),
