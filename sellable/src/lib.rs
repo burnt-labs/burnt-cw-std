@@ -120,6 +120,7 @@ where
             ExecuteMsg::List { listings } => {
                 self.try_list(deps, env, info, listings)?;
             }
+            ExecuteMsg::Delist { token_id } => todo!(),
         }
         Ok(Response::new())
     }
@@ -171,6 +172,7 @@ where
             ExecuteMsg::List { listings } => {
                 self.try_list(deps, env, info, listings)?;
             }
+            ExecuteMsg::Delist { token_id } => todo!(),
         }
         Ok(Response::new())
     }
