@@ -2,13 +2,12 @@ use std::{cell::RefCell, ops::Sub, rc::Rc};
 
 use crate::{errors::ContractError, RSellable, Sellable};
 use burnt_glue::response::Response;
-use cosmwasm_std::{
-    BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Uint128,
-};
+use cosmwasm_std::{BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Uint128};
 use cw_storage_plus::Map;
 use ownable::Ownable;
 use redeemable::Redeemable;
 use serde::{de::DeserializeOwned, Serialize};
+use serde_json::json;
 use token::Tokens;
 
 impl<'a, T, C, E, Q> Sellable<'a, T, C, E, Q>
@@ -59,6 +58,23 @@ where
         Ok(Response::new().add_attribute("method", "list"))
     }
 
+    pub fn try_delist(
+        &mut self,
+        deps: &mut DepsMut,
+        info: MessageInfo,
+        token_id: String,
+    ) -> Result<Response, ContractError> {
+        // Check that the token is still listed
+        self.listed_tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoListedTokensError)?;
+
+        let listed_token = self.tokens.borrow().contract.tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoMetadataPresent)?;
+        if listed_token.owner.eq(&info.sender) {
+            self.listed_tokens.remove(deps.storage, &token_id);
+            Ok(Response::new().add_attribute("delist", token_id))
+        } else {
+            Err(ContractError::Unauthorized)
+        }
+    }
     pub fn try_buy_token(
         &mut self,
         deps: &mut DepsMut,
@@ -110,7 +126,7 @@ where
                             })
                         }
                         // TODO: Send royalties to minter
-                        return Ok(Response::new().add_messages(messages));
+                        return Ok(Response::new().add_messages(messages).add_attribute("buy", token_id));
                     } else {
                         return Err(ContractError::InsufficientFundsError {
                             fund: info.funds[0].amount,
@@ -239,27 +255,45 @@ where
         let redeemable = &self.redeemable.borrow();
 
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
-        for (token_id, price) in listings {
+        for (token_id, price) in &listings {
             if price.amount > Uint128::new(0) {
                 if let Some(_) = self
                     .tokens
                     .borrow()
                     .contract
                     .tokens
-                    .may_load(deps.storage, &token_id)
+                    .may_load(deps.storage, token_id)
                     .unwrap()
                 {
-                    check_redeemable(&deps.as_ref(), &env, &info, &token_id, redeemable)?;
+                    check_redeemable(&deps.as_ref(), &env, &info, token_id, redeemable)?;
                     self.listed_tokens
-                        .save(deps.storage, token_id.as_str(), &price)?;
+                        .save(deps.storage, token_id.as_str(), price)?;
                 } else {
                     return Err(ContractError::NoMetadataPresent);
                 }
             }
         }
-        Ok(Response::new().add_attribute("method", "list"))
+        Ok(Response::new().add_attribute("list", json!(listings).to_string()))
     }
 
+    pub fn try_delist(
+        &mut self,
+        deps: &mut DepsMut,
+        info: MessageInfo,
+        token_id: String,
+    ) -> Result<Response, ContractError> {
+        // Check that the token is still listed
+        self.listed_tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoListedTokensError)?;
+
+        let listed_token = self.tokens.borrow().contract.tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoMetadataPresent)?;
+        if listed_token.owner.eq(&info.sender) {
+            self.listed_tokens.remove(deps.storage, &token_id);
+            Ok(Response::new().add_attribute("delist", token_id))
+        } else {
+            Err(ContractError::Unauthorized)
+        }
+    }
+    
     pub fn try_buy_token(
         &mut self,
         deps: &mut DepsMut,
