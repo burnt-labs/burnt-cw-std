@@ -117,6 +117,7 @@ where
             ExecuteMsg::Buy {} => self.try_buy(deps, info),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, info, token_id),
+            ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
         };
     }
 
@@ -164,6 +165,7 @@ where
             ExecuteMsg::Buy {} => self.try_buy(deps.branch(), &env, info),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, &env, info, token_id),
+            ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
         };
     }
 

@@ -242,4 +242,70 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn try_delist_token() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(CREATOR, &[]);
+
+        let mut sellable = setup_sellable_module(&mut deps.as_mut(), &env, &info);
+        assert_eq!(
+            sellable
+                .tokens
+                .borrow()
+                .contract
+                .token_count(&deps.storage)
+                .unwrap(),
+            0
+        );
+
+        // Mint a token
+        sellable
+            .tokens
+            .borrow_mut()
+            .contract
+            .mint(
+                deps.as_mut(),
+                env.clone(),
+                info.clone(),
+                MintMsg::<Empty> {
+                    token_id: "1".to_string(),
+                    owner: CREATOR.to_string(),
+                    token_uri: Some("uri".to_string()),
+                    extension: Empty {},
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            sellable
+                .tokens
+                .borrow()
+                .contract
+                .token_count(&deps.storage)
+                .unwrap(),
+            1
+        );
+
+        // List newly minted token
+        let listings = schemars::Map::from([(
+            "1".to_string(),
+            Coin {
+                amount: Uint128::new(10),
+                denom: "uturnt".to_string(),
+            },
+        )]);
+        sellable
+            .try_list(&mut deps.as_mut(), env.clone(), info.clone(), listings)
+            .unwrap();
+        let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
+        assert_eq!(result.tokens.len(), 1);
+
+        // De-list the ticket
+        sellable
+            .try_delist(&mut deps.as_mut(), info, "1".to_string())
+            .unwrap();
+        let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
+        assert_eq!(result.tokens.len(), 0);
+    }
 }
