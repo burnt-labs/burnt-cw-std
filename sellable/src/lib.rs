@@ -10,7 +10,7 @@ use state::LISTED_TOKENS;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
+use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use ownable::Ownable;
@@ -31,7 +31,7 @@ where
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
-    pub listed_tokens: Map<'a, &'a str, Uint64>,
+    pub listed_tokens: Map<'a, &'a str, Coin>,
 }
 
 pub struct RSellable<'a, T, C, E, Q>
@@ -43,7 +43,7 @@ where
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
-    pub listed_tokens: Map<'a, &'a str, Uint64>,
+    pub listed_tokens: Map<'a, &'a str, Coin>,
     pub redeemable: Rc<RefCell<Redeemable<'a>>>,
 }
 
@@ -113,15 +113,11 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        match msg {
-            ExecuteMsg::Buy {} => {
-                self.try_buy(deps, info)?;
-            }
-            ExecuteMsg::List { listings } => {
-                self.try_list(deps, env, info, listings)?;
-            }
-        }
-        Ok(Response::new())
+        return match msg {
+            ExecuteMsg::Buy {} => self.try_buy(deps, info),
+            ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
+            ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, info, token_id),
+        };
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {
@@ -164,15 +160,11 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        match msg {
-            ExecuteMsg::Buy {} => {
-                self.try_buy(deps.branch(), &env, info)?;
-            }
-            ExecuteMsg::List { listings } => {
-                self.try_list(deps, env, info, listings)?;
-            }
-        }
-        Ok(Response::new())
+        return match msg {
+            ExecuteMsg::Buy {} => self.try_buy(deps.branch(), &env, info),
+            ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
+            ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, &env, info, token_id),
+        };
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {
