@@ -232,7 +232,7 @@ mod tests {
             })
         );
         assert_eq!(
-            buy_resp.response .messages[1].msg,
+            buy_resp.response.messages[1].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: BUYER.to_string(),
                 amount: vec![Coin {
@@ -302,7 +302,9 @@ mod tests {
         assert_eq!(result.tokens.len(), 1);
 
         // De-list the ticket
-        sellable.try_delist(&mut deps.as_mut(), info, "1".to_string()).unwrap();
+        sellable
+            .try_delist(&mut deps.as_mut(), info, "1".to_string())
+            .unwrap();
         let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
         assert_eq!(result.tokens.len(), 0);
     }

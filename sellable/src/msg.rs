@@ -26,7 +26,9 @@ pub enum ExecuteMsg {
     },
 
     /// Delist a listed NFT
-    Delist { token_id: String },
+    Delist {
+        token_id: String,
+    },
     /// Purchases the cheapest listed NFT. The value passed along with the
     /// transaction will act as the upper bound for the purchase price.
     Buy {},

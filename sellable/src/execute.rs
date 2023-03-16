@@ -65,9 +65,17 @@ where
         token_id: String,
     ) -> Result<Response, ContractError> {
         // Check that the token is still listed
-        self.listed_tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoListedTokensError)?;
+        self.listed_tokens
+            .load(deps.storage, &token_id)
+            .map_err(|_| ContractError::NoListedTokensError)?;
 
-        let listed_token = self.tokens.borrow().contract.tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoMetadataPresent)?;
+        let listed_token = self
+            .tokens
+            .borrow()
+            .contract
+            .tokens
+            .load(deps.storage, &token_id)
+            .map_err(|_| ContractError::NoMetadataPresent)?;
         if listed_token.owner.eq(&info.sender) {
             self.listed_tokens.remove(deps.storage, &token_id);
             Ok(Response::new().add_attribute("delist", token_id))
@@ -84,8 +92,7 @@ where
         // check if enough fee was sent
         match info.funds.as_slice() {
             [fund] => {
-                self
-                    .listed_tokens
+                self.listed_tokens
                     .load(deps.storage, token_id.as_str())
                     .map_err(|_| ContractError::NoListedTokensError)
                     .and_then(|price| {
@@ -284,9 +291,17 @@ where
         token_id: String,
     ) -> Result<Response, ContractError> {
         // Check that the token is still listed
-        self.listed_tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoListedTokensError)?;
+        self.listed_tokens
+            .load(deps.storage, &token_id)
+            .map_err(|_| ContractError::NoListedTokensError)?;
 
-        let listed_token = self.tokens.borrow().contract.tokens.load(deps.storage, &token_id).map_err(|_| ContractError::NoMetadataPresent)?;
+        let listed_token = self
+            .tokens
+            .borrow()
+            .contract
+            .tokens
+            .load(deps.storage, &token_id)
+            .map_err(|_| ContractError::NoMetadataPresent)?;
         if listed_token.owner.eq(&info.sender) {
             self.listed_tokens.remove(deps.storage, &token_id);
             Ok(Response::new().add_attribute("delist", token_id))
@@ -294,7 +309,7 @@ where
             Err(ContractError::Unauthorized)
         }
     }
-    
+
     pub fn try_buy_token(
         &mut self,
         deps: &mut DepsMut,
@@ -304,60 +319,54 @@ where
     ) -> Result<Response, ContractError> {
         // check if enough fee was sent
         match info.funds.as_slice() {
-            [fund] => {
-                self
-                    .listed_tokens
-                    .load(deps.storage, token_id.as_str())
-                    .map_err(|_| ContractError::NoListedTokensError)
-                    .and_then(|price| {
-                        if fund.denom.ne(&price.denom) {
-                            return Err(ContractError::WrongFundError);
-                        } else if fund.amount.ge(&price.amount) {
-                            let redeemable = &self.redeemable.borrow();
-                            check_redeemable(&deps.as_ref(), env, &info, &token_id, redeemable)?;
-                            let token_metadata = self
-                                .tokens
-                                .borrow()
-                                .contract
-                                .tokens
-                                .load(deps.storage, &token_id)
-                                .map_err(|_| ContractError::NoMetadataPresent)?;
-                            self.tokens
-                                .borrow_mut()
-                                .contract
-                                .tokens
-                                .update::<_, ContractError>(
-                                    deps.storage,
-                                    token_id.as_str(),
-                                    |old| {
-                                        let mut token_info = old.unwrap();
-                                        token_info.owner = info.sender.clone();
-                                        Ok(token_info)
-                                    },
-                                )?;
-                            self.listed_tokens.remove(deps.storage, &token_id);
+            [fund] => self
+                .listed_tokens
+                .load(deps.storage, token_id.as_str())
+                .map_err(|_| ContractError::NoListedTokensError)
+                .and_then(|price| {
+                    if fund.denom.ne(&price.denom) {
+                        return Err(ContractError::WrongFundError);
+                    } else if fund.amount.ge(&price.amount) {
+                        let redeemable = &self.redeemable.borrow();
+                        check_redeemable(&deps.as_ref(), env, &info, &token_id, redeemable)?;
+                        let token_metadata = self
+                            .tokens
+                            .borrow()
+                            .contract
+                            .tokens
+                            .load(deps.storage, &token_id)
+                            .map_err(|_| ContractError::NoMetadataPresent)?;
+                        self.tokens
+                            .borrow_mut()
+                            .contract
+                            .tokens
+                            .update::<_, ContractError>(deps.storage, token_id.as_str(), |old| {
+                                let mut token_info = old.unwrap();
+                                token_info.owner = info.sender.clone();
+                                Ok(token_info)
+                            })?;
+                        self.listed_tokens.remove(deps.storage, &token_id);
 
-                            let delta = fund.amount.sub(price.amount);
-                            let mut messages = vec![BankMsg::Send {
-                                to_address: token_metadata.owner.to_string(),
-                                amount: vec![price.clone()],
-                            }];
-                            if !delta.is_zero() {
-                                messages.push(BankMsg::Send {
-                                    to_address: info.sender.to_string(),
-                                    amount: vec![Coin::new(delta.u128(), &price.denom)],
-                                })
-                            }
-
-                            return Ok(Response::new().add_messages(messages));
-                        } else {
-                            return Err(ContractError::InsufficientFundsError {
-                                fund: fund.amount,
-                                seat_price: price.amount,
-                            });
+                        let delta = fund.amount.sub(price.amount);
+                        let mut messages = vec![BankMsg::Send {
+                            to_address: token_metadata.owner.to_string(),
+                            amount: vec![price.clone()],
+                        }];
+                        if !delta.is_zero() {
+                            messages.push(BankMsg::Send {
+                                to_address: info.sender.to_string(),
+                                amount: vec![Coin::new(delta.u128(), &price.denom)],
+                            })
                         }
-                    })
-            }
+
+                        return Ok(Response::new().add_messages(messages));
+                    } else {
+                        return Err(ContractError::InsufficientFundsError {
+                            fund: fund.amount,
+                            seat_price: price.amount,
+                        });
+                    }
+                }),
             [] => return Err(ContractError::NoFundsPresent),
             _ => return Err(ContractError::MultipleFundsError),
         }
