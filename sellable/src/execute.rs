@@ -269,12 +269,11 @@ where
         // check if enough fee was sent
         match info.funds.as_slice() {
             [fund] => {
-                let token = self
+                self
                     .listed_tokens
                     .load(deps.storage, token_id.as_str())
-                    .map_err(|_| ContractError::NoListedTokensError);
-                match token {
-                    Ok(price) => {
+                    .map_err(|_| ContractError::NoListedTokensError)
+                    .and_then(|price| {
                         if fund.denom.ne(&price.denom) {
                             return Err(ContractError::WrongFundError);
                         } else if fund.amount.ge(&price.amount) {
@@ -321,9 +320,7 @@ where
                                 seat_price: price.amount,
                             });
                         }
-                    }
-                    Err(err) => return Err(err),
-                }
+                    })
             }
             [] => return Err(ContractError::NoFundsPresent),
             _ => return Err(ContractError::MultipleFundsError),
