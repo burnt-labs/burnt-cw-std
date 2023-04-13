@@ -83,7 +83,9 @@ where
 
         for sale in primary_sales.iter_mut() {
             if !sale.disabled && sale.end_time.gt(&env.block.time) {
-                if sale.tokens_minted.lt(&sale.total_supply) {
+                if sale.tokens_minted.lt(&sale.total_supply)
+                    || sale.total_supply.eq(&Uint64::from(0u64))
+                {
                     // check if enough fee was sent
                     let ownable = &self.sellable.borrow().ownable;
                     let paying_fund: &Coin;

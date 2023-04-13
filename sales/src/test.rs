@@ -193,5 +193,64 @@ mod tests {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert_eq!(sale.disabled, true),
             _ => assert!(false),
         }
+
+        // TEST: unlimited number of item for sale
+        // create a new primary sale
+        let json_exec_msg = json!({
+            "primary_sale": {
+                "total_supply": "0",
+                "start_time": "1678567587",
+                "end_time": "1679567587",
+                "price": [{
+                    "denom": "USDC",
+                    "amount": "10"
+                }]
+            }
+        })
+        .to_string();
+        env.block.time = Timestamp::from_seconds(1678567587);
+        let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
+        sales
+            .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
+            .expect("primary sales added");
+        let active_primary_sale = sales
+            .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
+            .unwrap();
+        match active_primary_sale {
+            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
+                assert_eq!(sale.total_supply.u64(), 0);
+                assert_eq!(sale.disabled, false);
+            }
+            _ => assert!(false),
+        }
+        let json_exec_msg = json!({
+            "buy_item": {
+                    "token_id": "unlimited_buy",
+                    "owner": CREATOR,
+                    "token_uri": "url",
+                    "extension": {}
+                }
+        })
+        .to_string();
+        let buyer_info = Rc::new(RefCell::new(mock_info(USER, &[Coin::new(20, "USDC")])));
+        let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
+        sales
+            .execute(
+                &mut deps.as_mut(),
+                env.clone(),
+                buyer_info.borrow_mut().clone(),
+                execute_msg,
+            )
+            .expect("item bought");
+        let active_primary_sale = sales
+            .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
+            .unwrap();
+        match active_primary_sale {
+            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
+                assert_eq!(sale.tokens_minted.u64(), 1);
+                assert_eq!(sale.disabled, false);
+            }
+            _ => assert!(false),
+        }
     }
 }
