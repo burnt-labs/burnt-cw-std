@@ -4,7 +4,7 @@ use cw_storage_plus::Item;
 use schemars::Set;
 
 impl<'a> Redeemable<'a> {
-    pub fn new (item: Item<'a, Set<String>>) -> Self {
+    pub fn new(item: Item<'a, Set<String>>) -> Self {
         Self { locked_items: item }
     }
 

@@ -220,7 +220,7 @@ mod tests {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
                 assert_eq!(sale.total_supply.u64(), 0);
                 assert_eq!(sale.disabled, false);
-            },
+            }
             _ => assert!(false),
         }
         let json_exec_msg = json!({
@@ -249,7 +249,7 @@ mod tests {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
                 assert_eq!(sale.tokens_minted.u64(), 1);
                 assert_eq!(sale.disabled, false);
-            },
+            }
             _ => assert!(false),
         }
     }
