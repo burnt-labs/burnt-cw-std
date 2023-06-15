@@ -113,19 +113,19 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        return match msg {
+        match msg {
             ExecuteMsg::Buy {} => self.try_buy(deps, info),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, info, token_id),
             ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
-        };
+        }
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {
         match msg {
             QueryMsg::ListedTokens { start_after, limit } => {
                 let response = self.listed_tokens(deps, start_after, limit);
-                return Ok(QueryResp::ListedTokens((response.unwrap()).tokens));
+                Ok(QueryResp::ListedTokens((response.unwrap()).tokens))
             }
         }
     }
@@ -173,7 +173,7 @@ where
         match msg {
             QueryMsg::ListedTokens { start_after, limit } => {
                 let response = self.listed_tokens(deps, start_after, limit);
-                return Ok(QueryResp::ListedTokens((response.unwrap()).tokens));
+                Ok(QueryResp::ListedTokens((response.unwrap()).tokens))
             }
         }
     }

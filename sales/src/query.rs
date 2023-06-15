@@ -12,7 +12,7 @@ where
 {
     pub fn primary_sales(&self, deps: &Deps) -> StdResult<QueryResp> {
         let primary_sales = self.primary_sales.load(deps.storage)?;
-        return Ok(QueryResp::PrimarySales(primary_sales));
+        Ok(QueryResp::PrimarySales(primary_sales))
     }
 
     pub fn active_primary_sales(&self, deps: &Deps, env: Env) -> StdResult<QueryResp> {
@@ -24,6 +24,6 @@ where
                 return Ok(QueryResp::ActivePrimarySale(Option::Some(sale)));
             }
         }
-        return Ok(QueryResp::ActivePrimarySale(Option::None));
+        Ok(QueryResp::ActivePrimarySale(Option::None))
     }
 }

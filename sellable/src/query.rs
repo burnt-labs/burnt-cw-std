@@ -37,7 +37,7 @@ where
             .map(|res| {
                 // TODO: Make sure burnt tokens are't included
                 let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
-                return (res.0, res.1, token_info);
+                (res.0, res.1, token_info)
             })
             .collect::<Vec<(String, Coin, TokenInfo<T>)>>();
 
@@ -73,7 +73,7 @@ where
             .map(|res| {
                 // TODO: Make sure burnt tokens are't included
                 let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
-                return (res.0, res.1, token_info);
+                (res.0, res.1, token_info)
             })
             .collect::<Vec<(String, Coin, TokenInfo<T>)>>();
 
