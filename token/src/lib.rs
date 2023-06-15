@@ -49,7 +49,7 @@ pub enum QueryResp {
     Result(Binary),
 }
 
-impl<'a, 'b, T, C, E, Q> Module for Tokens<'a, T, C, E, Q>
+impl<'a, T, C, E, Q> Module for Tokens<'a, T, C, E, Q>
 where
     T: Serialize + DeserializeOwned + Clone,
     Q: CustomMsg + DeserializeOwned,

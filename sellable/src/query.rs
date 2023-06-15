@@ -35,7 +35,6 @@ where
             .take(limit)
             .map(|t| t.unwrap())
             .map(|res| {
-                // TODO: Make sure burnt tokens are't included
                 let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
                 (res.0, res.1, token_info)
             })
@@ -71,7 +70,6 @@ where
             .take(limit)
             .map(|t| t.unwrap())
             .map(|res| {
-                // TODO: Make sure burnt tokens are't included
                 let token_info = contract.tokens.load(deps.storage, res.0.as_str()).unwrap();
                 (res.0, res.1, token_info)
             })

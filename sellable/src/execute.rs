@@ -132,7 +132,6 @@ where
                                     amount: vec![Coin::new(delta.u128(), &price.denom)],
                                 })
                             }
-                            // TODO: Send royalties to minter
                             return Ok(Response::new().add_messages(messages));
                         } else {
                             return Err(ContractError::InsufficientFundsError {
@@ -177,7 +176,6 @@ where
             let token_info = contract
                 .tokens
                 .load(deps.storage, lowest_listed_token.0.as_str())?;
-            // TODO: In-efficient access. Get rid of cloning
             let lowest = Ok((
                 lowest_listed_token.clone().0,
                 token_info.owner,
@@ -413,7 +411,6 @@ where
             let token_info = contract
                 .tokens
                 .load(deps.storage, lowest_listed_token.0.as_str())?;
-            // TODO: Get rid of cloning
             let lowest = Ok((
                 lowest_listed_token.clone().0,
                 token_info.owner,
