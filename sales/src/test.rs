@@ -61,12 +61,12 @@ mod tests {
         // instantiate sale module
         let sales_instantiate_msg = InstantiateMsg {
             sale: Some(CreatePrimarySale {
-                total_supply: Uint64::from(1 as u64),
-                start_time: Uint64::from(1664567586 as u64),
-                end_time: Uint64::from(1665567587 as u64),
+                total_supply: Uint64::from(1_u64),
+                start_time: Uint64::from(1664567586_u64),
+                end_time: Uint64::from(1665567587_u64),
                 price: vec![Coin {
                     denom: "uturnt".to_string(),
-                    amount: Uint128::from(10 as u64),
+                    amount: Uint128::from(10_u64),
                 }],
             }),
         };
@@ -82,7 +82,7 @@ mod tests {
             crate::msg::QueryResp::PrimarySales(primary_sales) => {
                 assert_eq!(primary_sales.len(), 1)
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
         // create a primary sale
         let json_exec_msg = json!({
@@ -104,17 +104,17 @@ mod tests {
             .execute(
                 &mut deps.as_mut(),
                 env.clone(),
-                fake_info.clone(),
+                fake_info,
                 execute_msg.clone(),
             )
             .expect_err("primary sales should not be added");
         // set block time
-        env.block.time = Timestamp::from_seconds(1666567587 as u64);
+        env.block.time = Timestamp::from_seconds(1666567587_u64);
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("primary sales added");
         let primary_sales = sales
-            .query(&deps.as_ref(), env.clone(), query_msg.clone())
+            .query(&deps.as_ref(), env.clone(), query_msg)
             .unwrap();
         let active_primary_sale = sales
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
@@ -123,13 +123,13 @@ mod tests {
             crate::msg::QueryResp::PrimarySales(primary_sales) => {
                 assert_eq!(primary_sales.len(), 2)
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
         match active_primary_sale {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
                 assert_eq!(sale.start_time.seconds().to_string(), "1674567586")
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
         // buy an item
         let json_exec_msg = json!({
@@ -155,8 +155,8 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert_eq!(sale.disabled, true),
-            _ => assert!(false),
+            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert!(sale.disabled),
+            _ => panic!(),
         }
 
         // create a new primary sale
@@ -190,8 +190,8 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert_eq!(sale.disabled, true),
-            _ => assert!(false),
+            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert!(sale.disabled),
+            _ => panic!(),
         }
 
         // TEST: unlimited number of item for sale
@@ -219,9 +219,9 @@ mod tests {
         match active_primary_sale {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
                 assert_eq!(sale.total_supply.u64(), 0);
-                assert_eq!(sale.disabled, false);
+                assert!(!sale.disabled);
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
         let json_exec_msg = json!({
             "buy_item": {
@@ -248,9 +248,9 @@ mod tests {
         match active_primary_sale {
             crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => {
                 assert_eq!(sale.tokens_minted.u64(), 1);
-                assert_eq!(sale.disabled, false);
+                assert!(!sale.disabled);
             }
-            _ => assert!(false),
+            _ => panic!(),
         }
     }
 }

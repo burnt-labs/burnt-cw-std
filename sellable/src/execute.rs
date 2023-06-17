@@ -97,7 +97,7 @@ where
                     .map_err(|_| ContractError::NoListedTokensError)
                     .and_then(|price| {
                         if fund.denom.ne(&price.denom) {
-                            return Err(ContractError::WrongFundError);
+                            Err(ContractError::WrongFundError)
                         } else if fund.amount.ge(&price.amount) {
                             let token_metadata = self
                                 .tokens
@@ -132,7 +132,6 @@ where
                                     amount: vec![Coin::new(delta.u128(), &price.denom)],
                                 })
                             }
-                            // TODO: Send royalties to minter
                             return Ok(Response::new().add_messages(messages));
                         } else {
                             return Err(ContractError::InsufficientFundsError {
@@ -142,8 +141,8 @@ where
                         }
                     })
             }
-            [] => return Err(ContractError::NoFundsPresent),
-            _ => return Err(ContractError::MultipleFundsError),
+            [] => Err(ContractError::NoFundsPresent),
+            _ => Err(ContractError::MultipleFundsError),
         }
     }
 
@@ -170,14 +169,13 @@ where
                 .map(|t| t.unwrap())
                 .collect::<Vec<(String, Coin)>>();
             sorted_tokens.sort_unstable_by_key(|t| t.1.amount);
-            if sorted_tokens.len() == 0 {
+            if sorted_tokens.is_empty() {
                 return Err(ContractError::NoListedTokensError);
             }
             let lowest_listed_token = sorted_tokens.get(0).unwrap();
             let token_info = contract
                 .tokens
                 .load(deps.storage, lowest_listed_token.0.as_str())?;
-            // TODO: In-efficient access. Get rid of cloning
             let lowest = Ok((
                 lowest_listed_token.clone().0,
                 token_info.owner,
@@ -191,7 +189,7 @@ where
                     } else {
                         Err(ContractError::LimitBelowLowestOffer {
                             limit,
-                            lowest_price: lowest_price,
+                            lowest_price,
                         })
                     }
                 })
@@ -226,7 +224,7 @@ where
                         .add_messages(messages))
                 })
         } else {
-            return Err(ContractError::NoFundsPresent);
+            Err(ContractError::NoFundsPresent)
         }
     }
 }
@@ -265,13 +263,13 @@ where
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
         for (token_id, price) in &listings {
             if price.amount > Uint128::new(0) {
-                if let Some(_) = self
+                if self
                     .tokens
                     .borrow()
                     .contract
                     .tokens
                     .may_load(deps.storage, token_id)
-                    .unwrap()
+                    .unwrap().is_some()
                 {
                     check_redeemable(&deps.as_ref(), &env, &info, token_id, redeemable)?;
                     self.listed_tokens
@@ -325,7 +323,7 @@ where
                 .map_err(|_| ContractError::NoListedTokensError)
                 .and_then(|price| {
                     if fund.denom.ne(&price.denom) {
-                        return Err(ContractError::WrongFundError);
+                        Err(ContractError::WrongFundError)
                     } else if fund.amount.ge(&price.amount) {
                         let redeemable = &self.redeemable.borrow();
                         check_redeemable(&deps.as_ref(), env, &info, &token_id, redeemable)?;
@@ -367,8 +365,8 @@ where
                         });
                     }
                 }),
-            [] => return Err(ContractError::NoFundsPresent),
-            _ => return Err(ContractError::MultipleFundsError),
+            [] => Err(ContractError::NoFundsPresent),
+            _ => Err(ContractError::MultipleFundsError),
         }
     }
 
@@ -398,7 +396,7 @@ where
                 .map(|t| t.unwrap())
                 .collect::<Vec<(String, Coin)>>();
             sorted_tokens.sort_unstable_by_key(|t| t.1.amount);
-            if sorted_tokens.len() == 0 {
+            if sorted_tokens.is_empty() {
                 return Err(ContractError::NoListedTokensError);
             }
             let lowest_listed_token = sorted_tokens.get(0).unwrap();
@@ -413,7 +411,6 @@ where
             let token_info = contract
                 .tokens
                 .load(deps.storage, lowest_listed_token.0.as_str())?;
-            // TODO: Get rid of cloning
             let lowest = Ok((
                 lowest_listed_token.clone().0,
                 token_info.owner,
@@ -427,7 +424,7 @@ where
                     } else {
                         Err(ContractError::LimitBelowLowestOffer {
                             limit,
-                            lowest_price: lowest_price,
+                            lowest_price,
                         })
                     }
                 })
@@ -462,7 +459,7 @@ where
                         .add_messages(messages))
                 })
         } else {
-            return Err(ContractError::NoFundsPresent);
+            Err(ContractError::NoFundsPresent)
         }
     }
 }
@@ -476,7 +473,7 @@ fn check_ownable(
     if ownable.is_owner(deps, &info.sender)? {
         return Ok(());
     }
-    return Ok(());
+    Ok(())
 }
 
 fn check_redeemable(
@@ -491,5 +488,5 @@ fn check_redeemable(
     if locked_tokens.contains(token_id) {
         return Err(ContractError::TicketRedeemed);
     }
-    return Ok(());
+    Ok(())
 }

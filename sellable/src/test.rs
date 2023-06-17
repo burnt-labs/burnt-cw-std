@@ -103,10 +103,10 @@ mod tests {
             non_minted_listings,
         );
         match list_result {
-            Ok(_) => assert!(false),
+            Ok(_) => panic!(),
             Err(err) => match err {
-                ContractError::NoMetadataPresent => assert!(true),
-                _ => assert!(false),
+                ContractError::NoMetadataPresent => {},
+                _ => panic!(),
             },
         }
 

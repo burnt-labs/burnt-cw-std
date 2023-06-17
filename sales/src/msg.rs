@@ -27,14 +27,14 @@ pub struct CreatePrimarySale {
     pub price: Vec<Coin>,
 }
 
-impl Into<PrimarySale> for CreatePrimarySale {
-    fn into(self) -> PrimarySale {
+impl From<CreatePrimarySale> for PrimarySale {
+    fn from(val: CreatePrimarySale) -> Self {
         PrimarySale {
-            total_supply: self.total_supply,
-            tokens_minted: Uint64::from(0 as u8),
-            start_time: Timestamp::from_seconds(self.start_time.u64()),
-            end_time: Timestamp::from_seconds(self.end_time.u64()),
-            price: self.price,
+            total_supply: val.total_supply,
+            tokens_minted: Uint64::from(0_u8),
+            start_time: Timestamp::from_seconds(val.start_time.u64()),
+            end_time: Timestamp::from_seconds(val.end_time.u64()),
+            price: val.price,
             disabled: false,
         }
     }

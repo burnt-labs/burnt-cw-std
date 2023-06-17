@@ -49,7 +49,7 @@ pub enum QueryResp {
     Result(Binary),
 }
 
-impl<'a, 'b, T, C, E, Q> Module for Tokens<'a, T, C, E, Q>
+impl<'a, T, C, E, Q> Module for Tokens<'a, T, C, E, Q>
 where
     T: Serialize + DeserializeOwned + Clone,
     Q: CustomMsg + DeserializeOwned,
@@ -82,7 +82,7 @@ where
         msg: ExecuteMsg<T, E>,
     ) -> Result<Response, Self::Error> {
         self.contract
-            .execute(deps.branch(), env.clone(), info.clone(), msg)?;
+            .execute(deps.branch(), env, info, msg)?;
         Ok(Response::new())
     }
 
@@ -92,7 +92,7 @@ where
         env: Env,
         msg: QueryMsg<Q>,
     ) -> Result<Self::QueryResp, Self::Error> {
-        let query_response = self.contract.query(deps.clone(), env.clone(), msg)?;
+        let query_response = self.contract.query(*deps, env, msg)?;
         Ok(QueryResp::Result(query_response))
     }
 }
