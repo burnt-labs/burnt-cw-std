@@ -5,7 +5,8 @@ members = [
     "token",
     "sellable",
     "redeemable",
-    "sales"
+    "sales",
+    "allowable"
 ]
 
 [workspace.dependencies]
