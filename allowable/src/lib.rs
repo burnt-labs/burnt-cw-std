@@ -59,8 +59,16 @@ impl<'a> Allowable<'a> {
         Ok(())
     }
 
-    pub fn is_allowed(&self, deps: &Deps, addr: Addr) -> StdResult<bool> {
+    pub fn is_allowed_addr(&self, deps: &Deps, addr: Addr) -> StdResult<bool> {
         Ok(self.allowed_addrs.has(deps.storage, addr))
+    }
+
+    pub fn is_allowed(&self, deps: &Deps, addr: Addr) -> StdResult<bool> {
+        if !(self.enabled.load(deps.storage)?) {
+            Ok(true)
+        } else {
+            Ok(self.allowed_addrs.has(deps.storage, addr))
+        }
     }
 }
 
@@ -134,6 +142,11 @@ impl<'a> Module for Allowable<'a> {
             QueryMsg::IsAllowed(address) => {
                 let is_allowed = self.is_allowed(deps, address)?;
                 let resp = QueryResp::IsAllowed(is_allowed);
+                Ok(resp)
+            }
+            QueryMsg::IsAllowedAddr(address) => {
+                let is_allowed = self.is_allowed_addr(deps, address)?;
+                let resp = QueryResp::IsAllowedAddr(is_allowed);
                 Ok(resp)
             }
             QueryMsg::IsEnabled() => {
