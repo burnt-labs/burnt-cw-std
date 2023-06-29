@@ -19,6 +19,7 @@ cw721-base = { workspace = true }
 sellable = { workspace = true }
 ownable = { workspace = true }
 token = { workspace = true }
+allowable = { workspace = true }
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

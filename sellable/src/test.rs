@@ -2,6 +2,7 @@
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
+    use allowable::Allowable;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
         Addr, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Env, MessageInfo, Uint128,
@@ -23,6 +24,7 @@ mod tests {
     ) -> Sellable<'static, Empty, Empty, Empty, Empty> {
         let sellable = Sellable::<Empty, Empty, Empty, Empty>::new(
             Rc::new(RefCell::new(Tokens::default())),
+            Rc::new(RefCell::new(Allowable::default())),
             Rc::new(RefCell::new(Ownable::default())),
             Map::new("listed_tokens"),
         );
@@ -33,6 +35,14 @@ mod tests {
             .owner
             .save(deps.storage, &Addr::unchecked(CREATOR))
             .unwrap();
+
+        // Instantiate the allowable module
+        sellable
+            .allowable
+            .borrow()
+            .allow_addrs(deps, vec![Addr::unchecked(BUYER)])
+            .unwrap();
+
         // Instantiate the token contract
         sellable
             .tokens
@@ -49,8 +59,34 @@ mod tests {
                 },
             )
             .unwrap();
+
+        sellable
+            .allowable
+            .borrow_mut()
+            .set_enabled(deps, true)
+            .unwrap();
+
         sellable
     }
+
+    #[test]
+    fn allowable_sellable() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(CREATOR, &[]);
+
+        let sellable = setup_sellable_module(&mut deps.as_mut(), &env, &info);
+
+        let allowable = &sellable.allowable.borrow();
+        allowable.set_enabled(&mut deps.as_mut(), true).unwrap();
+
+        let allowed = allowable
+            .is_allowed(&deps.as_ref(), Addr::unchecked(BUYER))
+            .unwrap();
+
+        assert_eq!(allowed, true);
+    }
+
     #[test]
     fn sellable_token_list() {
         let mut deps = mock_dependencies();
@@ -58,6 +94,7 @@ mod tests {
         let info = mock_info(CREATOR, &[]);
 
         let mut sellable = setup_sellable_module(&mut deps.as_mut(), &env, &info);
+
         // Mint a token
         sellable
             .tokens
@@ -105,7 +142,7 @@ mod tests {
         match list_result {
             Ok(_) => panic!(),
             Err(err) => match err {
-                ContractError::NoMetadataPresent => {},
+                ContractError::NoMetadataPresent => {}
                 _ => panic!(),
             },
         }

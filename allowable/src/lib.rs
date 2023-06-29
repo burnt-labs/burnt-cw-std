@@ -1,19 +1,19 @@
-mod state;
-mod msg;
 mod errors;
+mod msg;
+mod state;
+mod test;
 
 use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, StdResult};
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-
-use ownable::Ownable;
-use burnt_glue::module::Module;
-use burnt_glue::response::Response;
-use cw_storage_plus::{Item, Map};
 use crate::errors::AllowableError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use crate::state::{ALLOWED_ADDRS, ENABLED};
+use burnt_glue::module::Module;
+use burnt_glue::response::Response;
+use cw_storage_plus::{Item, Map};
+use ownable::Ownable;
 
 pub struct Allowable<'a> {
     ownable: Rc<RefCell<Ownable<'a>>>,
@@ -105,26 +105,26 @@ impl<'a> Module for Allowable<'a> {
             Err(AllowableError::Unauthorized {})
         } else {
             match msg {
-                ExecuteMsg::SetEnabled(enabled) => {
+                ExecuteMsg::SetEnabled { enabled } => {
                     self.set_enabled(deps, enabled)?;
                     let resp = Response::new();
                     Ok(resp)
                 }
 
-                ExecuteMsg::ClearAllowedAddrs() => {
+                ExecuteMsg::ClearAllAllowedAddrs {} => {
                     self.clear_addrs(deps)?;
                     let resp = Response::new();
                     Ok(resp)
                 }
 
-                ExecuteMsg::AddAllowedAddrs(addrs) => {
-                    self.allow_addrs(deps, addrs)?;
+                ExecuteMsg::AddAllowedAddrs { addresses } => {
+                    self.allow_addrs(deps, addresses)?;
                     let resp = Response::new();
                     Ok(resp)
                 }
 
-                ExecuteMsg::RemoveAllowedAddrs(addrs) => {
-                    self.remove_addrs(deps, addrs)?;
+                ExecuteMsg::RemoveAllowedAddrs { addresses } => {
+                    self.remove_addrs(deps, addresses)?;
                     let resp = Response::new();
                     Ok(resp)
                 }
@@ -139,9 +139,9 @@ impl<'a> Module for Allowable<'a> {
         msg: Self::QueryMsg,
     ) -> Result<Self::QueryResp, Self::Error> {
         match msg {
-            QueryMsg::IsAllowed(address) => {
+            QueryMsg::IsAllowed { address } => {
                 let is_allowed = self.is_allowed(deps, address)?;
-                let resp = QueryResp::IsAllowed(is_allowed);
+                let resp = QueryResp::IsAllowed { is_allowed };
                 Ok(resp)
             }
             QueryMsg::IsAllowedAddr(address) => {
@@ -149,9 +149,9 @@ impl<'a> Module for Allowable<'a> {
                 let resp = QueryResp::IsAllowedAddr(is_allowed);
                 Ok(resp)
             }
-            QueryMsg::IsEnabled() => {
+            QueryMsg::IsEnabled {} => {
                 let is_enabled = self.get_enabled(deps)?;
-                let resp = QueryResp::IsEnabled(is_enabled);
+                let resp = QueryResp::IsEnabled { is_enabled };
                 Ok(resp)
             }
         }

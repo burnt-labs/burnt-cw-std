@@ -23,6 +23,7 @@ burnt-glue = "0.2.2"
 semver = "1.0.14"
 cw721-base = "0.16.0"
 ownable = { path = "./ownable" }
+allowable = { path = "./allowable" }
 token = { path = "./token" }
 redeemable = { path = "./redeemable" }
 sellable = { path = "./sellable" }
