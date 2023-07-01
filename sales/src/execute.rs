@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
-use cosmwasm_std::{BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
+use cosmwasm_std::{BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64};
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
 use ownable::Ownable;
@@ -34,20 +34,33 @@ where
         env: Env,
         info: &MessageInfo,
     ) -> Result<Response, ContractError> {
-        // basic validation on CreatePrimarySale struct
+        // can not add a sale that starts in the past
         if msg.start_time.lt(&Uint64::from(env.block.time.seconds())) {
             return Err(ContractError::InvalidPrimarySaleParamError(
                 "start time".to_string(),
             ));
         }
-        let ownable = &self.sellable.borrow().ownable;
-        assert_owner(&deps.as_ref(), &env, info, &ownable.borrow())?;
+        // cannot add a sale that ends before it starts
+        if !msg.end_time.gt(&msg.start_time) {
+            return Err(ContractError::InvalidPrimarySaleParamError(
+                "end time".to_string(),
+            ));
+        }
+
+        // validate contract owner
+        if info.sender != self.sellable.borrow().ownable.borrow().owner.load(deps.storage)? {
+            return Err(ContractError::Unauthorized);
+        }
+
         // make sure no active primary sale
+        let start_time = Timestamp::from_seconds(msg.start_time.u64());
+        let end_time = Timestamp::from_seconds(msg.end_time.u64());
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap_or(vec![]);
         for sale in &primary_sales {
-            if msg.start_time.le(&Uint64::from(sale.end_time.seconds())) {
+            // can't add a sale that overlaps with the start or end of another sale
+            if check_events_overlap(start_time, end_time, sale.start_time, sale.end_time){
                 return Err(ContractError::InvalidPrimarySaleParamError(
-                    "start time".to_string(),
+                    "overlap".to_string(),
                 ));
             }
         }
@@ -205,4 +218,29 @@ fn assert_owner(
         return Ok(());
     }
     Err(ContractError::Unauthorized)
+}
+
+
+fn check_events_overlap(a_start: Timestamp, a_end: Timestamp, b_start: Timestamp, b_end: Timestamp) -> bool {
+    // first event starts during second event
+    if a_start.ge(&b_start) && a_start.le(&b_end) {
+        return true
+    }
+
+    // first event ends during second event
+    if a_end.ge(&b_start) && a_end.le(&b_end) {
+        return true
+    }
+
+    // second event starts during first event
+    if b_start.ge(&a_start) && b_start.le(&a_end) {
+        return true
+    }
+
+    // second event ends during first event
+    if b_end.ge(&a_start) && b_end.le(&a_end) {
+        return true
+    }
+
+    false
 }
