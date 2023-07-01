@@ -56,7 +56,11 @@ where
         Ok(Response::default())
     }
 
-    pub fn halt_sale(&mut self, deps: &mut DepsMut, env: Env) -> Result<Response, ContractError> {
+    pub fn halt_sale(&mut self, deps: &mut DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+        if info.sender != self.sellable.borrow().ownable.borrow().owner.load(deps.storage)? {
+            return Err(ContractError::Unauthorized);
+        }
+
         let mut primary_sales = self.primary_sales.load(deps.storage)?;
 
         for sale in primary_sales.iter_mut() {
