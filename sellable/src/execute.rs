@@ -470,8 +470,8 @@ fn check_ownable(
     info: &MessageInfo,
     ownable: &Ownable,
 ) -> Result<(), ContractError> {
-    if ownable.is_owner(deps, &info.sender)? {
-        return Ok(());
+    if !ownable.is_owner(deps, &info.sender)? {
+        return Err(ContractError::Unauthorized);
     }
     Ok(())
 }
