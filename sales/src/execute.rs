@@ -101,7 +101,6 @@ where
         for sale in primary_sales.iter_mut() {
             if !sale.disabled && sale.end_time.gt(&env.block.time) && (sale.tokens_minted.lt(&sale.total_supply) || sale.total_supply.eq(&Uint64::from(0_u8))) {
                 // check if enough fee was sent
-                let ownable = &self.sellable.borrow().ownable;
                 let paying_fund: &Coin;
                 if info.funds.len() > 1 {
                     return Err(ContractError::MultipleFundsError);
@@ -128,6 +127,7 @@ where
                     sale.disabled = true;
                 }
                 // send funds to creator
+                let ownable = &self.sellable.borrow().ownable;
                 let message = BankMsg::Send {
                     to_address: ownable
                         .borrow()
