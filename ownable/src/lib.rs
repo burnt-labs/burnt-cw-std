@@ -104,6 +104,9 @@ impl<'a> Module for Ownable<'a> {
     ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::SetOwner(owner) => {
+                // validate Addr before saving
+                deps.api.addr_validate(owner.as_str())?;
+
                 let loaded_owner = self.owner.load(deps.storage).unwrap();
                 if info.sender != loaded_owner {
                     Err(Unauthorized {})
