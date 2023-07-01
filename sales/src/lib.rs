@@ -95,7 +95,7 @@ where
         match msg {
             ExecuteMsg::PrimarySale(msg) => self.add_primary_sales(msg, deps, env, &info),
 
-            ExecuteMsg::HaltSale {} => self.halt_sale(deps, env),
+            ExecuteMsg::HaltSale {} => self.halt_sale(deps, env, info),
 
             ExecuteMsg::BuyItem(mint_msg) => self.buy_item(env, deps, info, mint_msg),
         }
