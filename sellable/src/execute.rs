@@ -402,10 +402,16 @@ where
                 .range(deps.storage, None, None, Order::Descending)
                 .map(|t| t.unwrap())
                 .collect::<Vec<(String, Coin)>>();
-            sorted_tokens.sort_unstable_by_key(|t| t.1.amount);
             if sorted_tokens.is_empty() {
                 return Err(ContractError::NoListedTokensError);
             }
+            sorted_tokens.sort_by(|a, b| {
+                if a.1.amount == b.1.amount {
+                    a.1.denom.cmp(&b.1.denom)
+                } else {
+                    a.1.amount.cmp(&b.1.amount)
+                }
+            });
             let lowest_listed_token = sorted_tokens.get(0).unwrap();
 
             check_redeemable(
