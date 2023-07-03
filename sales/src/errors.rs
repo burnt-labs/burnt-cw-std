@@ -18,6 +18,9 @@ pub enum ContractError {
     #[error("Token Module")]
     TokenModuleError(cw721_base::ContractError),
 
+    #[error("No Funds")]
+    NoFundsError,
+
     #[error("Multiple Funds")]
     MultipleFundsError,
 

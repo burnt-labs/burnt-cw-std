@@ -23,7 +23,7 @@ use serde::Deserialize;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub struct PrimarySale {
-    pub total_supply: Uint64,
+    pub total_supply: Uint64, // total number of tokens to be sold, 0 means unlimited
     pub tokens_minted: Uint64,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
