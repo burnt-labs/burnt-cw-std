@@ -82,30 +82,33 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
 
         for sale in primary_sales.iter_mut() {
-            if !sale.disabled && sale.end_time.gt(&env.block.time) && (sale.tokens_minted.lt(&sale.total_supply) || sale.total_supply.eq(&Uint64::from(0_u8))) {
+            if !sale.disabled
+                && sale.end_time.gt(&env.block.time)
+                && (sale.tokens_minted.lt(&sale.total_supply)
+                    || sale.total_supply.eq(&Uint64::from(0_u8)))
+            {
                 // check if enough fee was sent
                 let ownable = &self.sellable.borrow().ownable;
-                let paying_fund: &Coin;
                 if info.funds.len() > 1 {
                     return Err(ContractError::MultipleFundsError);
-                } else if sale.price.contains(&info.funds[0]) {
-                    return Err(ContractError::WrongFundError);
-                } else {
-                    paying_fund = sale
-                        .price
-                        .iter()
-                        .find(|coin| coin.denom == info.funds[0].denom)
-                        .unwrap();
-                    if paying_fund.amount.gt(&info.funds[0].amount) {
+                } else if let Some(coin) = info
+                    .funds
+                    .iter()
+                    .find(|&coin| coin.denom.eq(&sale.price[0].denom))
+                {
+                    if coin.amount.gt(&info.funds[0].amount) {
                         return Err(ContractError::InsufficientFundsError);
                     }
+                } else {
+                    return Err(ContractError::WrongFundError);
                 }
+                let paying_fund = info
+                .funds
+                .iter()
+                .find(|&coin| coin.denom.eq(&sale.price[0].denom)).unwrap();
                 // mint the item
                 let mut response = self.mint(deps, env, &info, mint_msg).unwrap();
-                sale.tokens_minted = sale
-                    .tokens_minted
-                    .checked_add(Uint64::from(1_u8))
-                    .unwrap();
+                sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
@@ -133,10 +136,7 @@ where
                         .unwrap();
                     let refund_message = BankMsg::Send {
                         to_address: info.sender.to_string(),
-                        amount: vec![Coin::new(
-                            refund_amount.u128(),
-                            paying_fund.denom.clone(),
-                        )],
+                        amount: vec![Coin::new(refund_amount.u128(), paying_fund.denom.clone())],
                     };
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
