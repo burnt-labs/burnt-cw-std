@@ -29,7 +29,7 @@ where
         }
     }
 
-    pub fn add_primary_sales(
+    pub fn add_primary_sale(
         &mut self,
         msg: CreatePrimarySale,
         deps: &mut DepsMut,
