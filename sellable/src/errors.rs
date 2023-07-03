@@ -18,6 +18,12 @@ pub enum ContractError {
     #[error("Missing required metadata")]
     NoMetadataPresent,
 
+    #[error("Token already listed")]
+    TokenAlreadyListed,
+
+    #[error("Invalid listing price")]
+    InvalidListingPrice,
+
     #[error("No tokens listed for sale")]
     NoListedTokensError,
 

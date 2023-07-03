@@ -44,7 +44,9 @@ where
 
         for (token_id, price) in listings {
             if price.amount > Uint128::new(0) {
-                if let Ok(Some(_)) = self
+                if self.listed_tokens.may_load(deps.storage, &token_id).is_ok() {
+                    return Err(ContractError::TokenAlreadyListed);
+                } else if let Ok(Some(_)) = self
                     .tokens
                     .borrow()
                     .contract
@@ -56,6 +58,8 @@ where
                 } else {
                     return Err(ContractError::NoMetadataPresent);
                 }
+            } else {
+                return Err(ContractError::InvalidListingPrice);
             }
         }
         Ok(Response::new().add_attribute("method", "list"))
@@ -268,7 +272,9 @@ where
 
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
         for (token_id, price) in &listings {
-            if price.amount > Uint128::new(0) {
+            if self.listed_tokens.may_load(deps.storage, &token_id).is_ok() {
+                return Err(ContractError::TokenAlreadyListed);
+            } else if price.amount > Uint128::new(0) {
                 if self
                     .tokens
                     .borrow()
@@ -284,6 +290,8 @@ where
                 } else {
                     return Err(ContractError::NoMetadataPresent);
                 }
+            } else {
+                return Err(ContractError::InvalidListingPrice);
             }
         }
         Ok(Response::new().add_attribute("list", json!(listings).to_string()))
