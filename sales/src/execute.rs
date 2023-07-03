@@ -1,7 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
-use cosmwasm_std::{BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64};
+use cosmwasm_std::{
+    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64,
+};
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
 use ownable::Ownable;
@@ -39,16 +41,23 @@ where
             return Err(ContractError::InvalidPrimarySaleParamError(
                 "start time".to_string(),
             ));
-        }
-        // cannot add a sale that ends before it starts
-        if !msg.end_time.gt(&msg.start_time) {
+        } else if !msg.end_time.gt(&msg.start_time) {
+            // cannot add a sale that ends before it starts
             return Err(ContractError::InvalidPrimarySaleParamError(
                 "end time".to_string(),
             ));
         }
 
         // validate contract owner
-        if info.sender != self.sellable.borrow().ownable.borrow().owner.load(deps.storage)? {
+        if info.sender
+            != self
+                .sellable
+                .borrow()
+                .ownable
+                .borrow()
+                .owner
+                .load(deps.storage)?
+        {
             return Err(ContractError::Unauthorized);
         }
 
@@ -58,7 +67,7 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap_or(vec![]);
         for sale in &primary_sales {
             // can't add a sale that overlaps with the start or end of another sale
-            if check_events_overlap(start_time, end_time, sale.start_time, sale.end_time){
+            if check_events_overlap(start_time, end_time, sale.start_time, sale.end_time) {
                 return Err(ContractError::InvalidPrimarySaleParamError(
                     "overlap".to_string(),
                 ));
@@ -69,8 +78,21 @@ where
         Ok(Response::default())
     }
 
-    pub fn halt_sale(&mut self, deps: &mut DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-        if info.sender != self.sellable.borrow().ownable.borrow().owner.load(deps.storage)? {
+    pub fn halt_sale(
+        &mut self,
+        deps: &mut DepsMut,
+        env: Env,
+        info: MessageInfo,
+    ) -> Result<Response, ContractError> {
+        if info.sender
+            != self
+                .sellable
+                .borrow()
+                .ownable
+                .borrow()
+                .owner
+                .load(deps.storage)?
+        {
             return Err(ContractError::Unauthorized);
         }
 
@@ -99,29 +121,27 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
 
         for sale in primary_sales.iter_mut() {
-            if !sale.disabled && sale.end_time.gt(&env.block.time) && (sale.tokens_minted.lt(&sale.total_supply) || sale.total_supply.eq(&Uint64::from(0_u8))) {
+            if !sale.disabled
+                && sale.end_time.gt(&env.block.time)
+                && (sale.tokens_minted.lt(&sale.total_supply)
+                    || sale.total_supply.eq(&Uint64::from(0_u8)))
+            {
                 // check if enough fee was sent
-                let paying_fund: &Coin;
-                if info.funds.len() > 1 {
+                if info.funds.len() == 0 {
+                    return Err(ContractError::NoFundsError);
+                } else if info.funds.len() > 1 {
                     return Err(ContractError::MultipleFundsError);
-                } else if sale.price.contains(&info.funds[0]) {
-                    return Err(ContractError::WrongFundError);
                 } else {
-                    paying_fund = sale
-                        .price
-                        .iter()
-                        .find(|coin| coin.denom == info.funds[0].denom)
-                        .unwrap();
-                    if paying_fund.amount.gt(&info.funds[0].amount) {
+                    if info.funds[0].denom.ne(&sale.price[0].denom) {
+                        return Err(ContractError::WrongFundError);
+                    }
+                    if info.funds[0].amount.lt(&info.funds[0].amount) {
                         return Err(ContractError::InsufficientFundsError);
                     }
                 }
                 // mint the item
                 let mut response = self.mint(deps, env, &info, mint_msg).unwrap();
-                sale.tokens_minted = sale
-                    .tokens_minted
-                    .checked_add(Uint64::from(1_u8))
-                    .unwrap();
+                sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
@@ -135,25 +155,22 @@ where
                         .unwrap()
                         .to_string(),
                     amount: vec![Coin::new(
-                        paying_fund.amount.u128(),
-                        paying_fund.denom.clone(),
+                        sale.price[0].amount.u128(),
+                        sale.price[0].denom.clone(),
                     )],
                 };
                 let cosmos_msg = CosmosMsg::Bank(message);
                 response = response.add_message(cosmos_msg);
 
-                if paying_fund.amount.lt(&info.funds[0].amount) {
+                if sale.price[0].amount.lt(&info.funds[0].amount) {
                     // refund user back extra funds
                     let refund_amount = info.funds[0]
                         .amount
-                        .checked_sub(paying_fund.amount)
+                        .checked_sub(sale.price[0].amount)
                         .unwrap();
                     let refund_message = BankMsg::Send {
                         to_address: info.sender.to_string(),
-                        amount: vec![Coin::new(
-                            refund_amount.u128(),
-                            paying_fund.denom.clone(),
-                        )],
+                        amount: vec![Coin::new(refund_amount.u128(), sale.price[0].denom.clone())],
                     };
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
@@ -220,26 +237,30 @@ fn assert_owner(
     Err(ContractError::Unauthorized)
 }
 
-
-fn check_events_overlap(a_start: Timestamp, a_end: Timestamp, b_start: Timestamp, b_end: Timestamp) -> bool {
+fn check_events_overlap(
+    a_start: Timestamp,
+    a_end: Timestamp,
+    b_start: Timestamp,
+    b_end: Timestamp,
+) -> bool {
     // first event starts during second event
     if a_start.ge(&b_start) && a_start.le(&b_end) {
-        return true
+        return true;
     }
 
     // first event ends during second event
     if a_end.ge(&b_start) && a_end.le(&b_end) {
-        return true
+        return true;
     }
 
     // second event starts during first event
     if b_start.ge(&a_start) && b_start.le(&a_end) {
-        return true
+        return true;
     }
 
     // second event ends during first event
     if b_end.ge(&a_start) && b_end.le(&a_end) {
-        return true
+        return true;
     }
 
     false
