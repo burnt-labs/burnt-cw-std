@@ -78,7 +78,7 @@ where
         msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         if let Some(sale) = msg.sale {
-            self.add_primary_sales(sale, deps, env.clone(), info)?;
+            self.add_primary_sale(sale, deps, env.clone(), info)?;
         } else {
             self.primary_sales.save(deps.storage, &vec![])?;
         }
@@ -93,7 +93,7 @@ where
         msg: ExecuteMsg<T>,
     ) -> Result<Response, Self::Error> {
         match msg {
-            ExecuteMsg::PrimarySale(msg) => self.add_primary_sales(msg, deps, env, &info),
+            ExecuteMsg::PrimarySale(msg) => self.add_primary_sale(msg, deps, env, &info),
 
             ExecuteMsg::HaltSale {} => self.halt_sale(deps, env, info),
 
