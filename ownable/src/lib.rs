@@ -90,7 +90,8 @@ impl<'a> Module for Ownable<'a> {
         info: &MessageInfo,
         _: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
-        self.owner.save(deps.storage, &info.sender)?;
+        let owner = deps.api.addr_validate(info.sender.as_str())?;
+        self.owner.save(deps.storage, &owner)?;
 
         Ok(Response::new())
     }
