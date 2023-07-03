@@ -41,9 +41,8 @@ where
             return Err(ContractError::InvalidPrimarySaleParamError(
                 "start time".to_string(),
             ));
-        }
-        // cannot add a sale that ends before it starts
-        if !msg.end_time.gt(&msg.start_time) {
+        } else if !msg.end_time.gt(&msg.start_time) {
+            // cannot add a sale that ends before it starts
             return Err(ContractError::InvalidPrimarySaleParamError(
                 "end time".to_string(),
             ));
