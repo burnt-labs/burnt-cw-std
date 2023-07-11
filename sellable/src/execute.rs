@@ -113,7 +113,7 @@ where
         });
         let lowest_listed_token = sorted_tokens.get(0).unwrap();
 
-        return self.try_buy_token(deps, info, lowest_listed_token.clone().0);
+        self.try_buy_token(deps, info, lowest_listed_token.clone().0)
     }
 
     pub fn try_buy_token(
@@ -434,7 +434,7 @@ where
         });
         let lowest_listed_token = sorted_tokens.get(0).unwrap();
 
-        return self.try_buy_token(deps, env, info, lowest_listed_token.clone().0);
+        self.try_buy_token(deps, env, info, lowest_listed_token.clone().0)
     }
 }
 
