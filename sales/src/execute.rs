@@ -98,8 +98,7 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage)?;
 
         for sale in primary_sales.iter_mut() {
-            if !sale.disabled && sale.end_time.gt(&env.block.time)
-            {
+            if !sale.disabled && sale.end_time.gt(&env.block.time) {
                 sale.disabled = true;
                 self.primary_sales.save(deps.storage, &primary_sales)?;
                 return Ok(Response::default());
