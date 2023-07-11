@@ -6,7 +6,6 @@ use cosmwasm_std::{
 };
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
-use ownable::Ownable;
 use sellable::Sellable;
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -124,7 +123,8 @@ where
             if !sale.disabled // if the sale is not disabled
                 && sale.end_time.gt(&env.block.time) // and the sale has not ended
                 && (sale.tokens_minted.lt(&sale.total_supply) // and tokens haven't hit their supply cap
-                    || sale.total_supply.eq(&Uint64::from(0_u8))) // or the supply cap is 0 (unlimited)
+                    || sale.total_supply.eq(&Uint64::from(0_u8)))
+            // or the supply cap is 0 (unlimited)
             {
                 // check if enough fee was sent
                 if info.funds.len() == 0 {
@@ -223,18 +223,6 @@ where
             .add_attribute("owner", msg.owner)
             .add_attribute("token_id", msg.token_id))
     }
-}
-
-fn assert_owner(
-    deps: &Deps,
-    _env: &Env,
-    info: &MessageInfo,
-    ownable: &Ownable,
-) -> Result<(), ContractError> {
-    if ownable.is_owner(deps, &info.sender)? {
-        return Ok(());
-    }
-    Err(ContractError::Unauthorized)
 }
 
 fn check_events_overlap(
