@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
 use cosmwasm_std::{
-    BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Timestamp, Uint64,
+    BankMsg, Coin, CosmosMsg, CustomMsg, DepsMut, Env, MessageInfo, Timestamp, Uint64,
 };
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
