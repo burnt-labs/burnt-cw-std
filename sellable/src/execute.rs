@@ -56,7 +56,7 @@ where
                     self.listed_tokens
                         .save(deps.storage, token_id.as_str(), &price)?;
                 } else {
-                    return Err(ContractError::NoMetadataPresent);
+                    return Err(ContractError::TokenIDNotFoundError);
                 }
             } else {
                 return Err(ContractError::InvalidListingPrice);
@@ -82,7 +82,7 @@ where
             .contract
             .tokens
             .load(deps.storage, &token_id)
-            .map_err(|_| ContractError::NoMetadataPresent)?;
+            .map_err(|_| ContractError::TokenIDNotFoundError)?;
         if listed_token.owner.eq(&info.sender) {
             self.listed_tokens.remove(deps.storage, &token_id);
             Ok(Response::new().add_attribute("delist", token_id))
@@ -163,7 +163,7 @@ where
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;
         } else {
-            return Err(ContractError::NoFundsPresent);
+            return Err(ContractError::NoTokensDefined);
         }
         let contract = &self.tokens.borrow_mut().contract;
         let maybe_coin = info.funds.iter().find(|&coin| coin.denom.eq(&denom_name));
@@ -288,7 +288,7 @@ where
                     self.listed_tokens
                         .save(deps.storage, token_id.as_str(), price)?;
                 } else {
-                    return Err(ContractError::NoMetadataPresent);
+                    return Err(ContractError::TokenIDNotFoundError);
                 }
             } else {
                 return Err(ContractError::InvalidListingPrice);
@@ -314,7 +314,7 @@ where
             .contract
             .tokens
             .load(deps.storage, &token_id)
-            .map_err(|_| ContractError::NoMetadataPresent)?;
+            .map_err(|_| ContractError::TokenIDNotFoundError)?;
         if listed_token.owner.eq(&info.sender) {
             self.listed_tokens.remove(deps.storage, &token_id);
             Ok(Response::new().add_attribute("delist", token_id))
@@ -395,7 +395,7 @@ where
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;
         } else {
-            return Err(ContractError::NoFundsPresent);
+            return Err(ContractError::NoTokensDefined);
         }
         let contract = &self.tokens.borrow_mut().contract;
         let redeemable = &self.redeemable.borrow();
