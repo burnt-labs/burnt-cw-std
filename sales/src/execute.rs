@@ -120,11 +120,10 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
 
         for sale in primary_sales.iter_mut() {
-            // Make sure that the sale isn't disabled, hasn't ended, and hasn't sold out
-            if !sale.disabled
-                && sale.end_time.gt(&env.block.time)
-                && (sale.tokens_minted.lt(&sale.total_supply)
-                    || sale.total_supply.eq(&Uint64::from(0_u8)))
+            if !sale.disabled // if the sale is not disabled
+                && sale.end_time.gt(&env.block.time) // and the sale has not ended
+                && (sale.tokens_minted.lt(&sale.total_supply) // and tokens haven't hit their supply cap
+                    || sale.total_supply.eq(&Uint64::from(0_u8))) // or the supply cap is 0 (unlimited)
             {
                 // check if enough fee was sent
                 if info.funds.len() == 0 {
