@@ -99,8 +99,7 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage)?;
 
         for sale in primary_sales.iter_mut() {
-            if (!sale.disabled && sale.end_time.gt(&env.block.time))
-                || sale.end_time.gt(&env.block.time)
+            if !sale.disabled && sale.end_time.gt(&env.block.time)
             {
                 sale.disabled = true;
                 self.primary_sales.save(deps.storage, &primary_sales)?;
@@ -121,6 +120,7 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
 
         for sale in primary_sales.iter_mut() {
+            // Make sure that the sale isn't disabled, hasn't ended, and hasn't sold out
             if !sale.disabled
                 && sale.end_time.gt(&env.block.time)
                 && (sale.tokens_minted.lt(&sale.total_supply)
