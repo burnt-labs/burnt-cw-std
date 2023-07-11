@@ -94,7 +94,6 @@ where
     pub fn try_buy(
         &mut self,
         deps: &mut DepsMut,
-        env: &Env,
         info: MessageInfo,
     ) -> Result<Response, ContractError> {
         let mut sorted_tokens = self

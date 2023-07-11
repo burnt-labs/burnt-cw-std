@@ -15,7 +15,6 @@ where
     E: CustomMsg,
 {
     pub contract: Cw721Contract<'a, T, C, E, Q>,
-    pub name: Option<String>, // The token denomination e.g. burnt
 }
 
 impl<'a, T, C, E, Q> Default for Tokens<'a, T, C, E, Q>
@@ -27,7 +26,6 @@ where
     fn default() -> Self {
         Self {
             contract: Cw721Contract::<T, C, E, Q>::default(),
-            name: None,
         }
     }
 }
@@ -38,8 +36,8 @@ where
     Q: CustomMsg,
     E: CustomMsg,
 {
-    pub fn new(contract: Cw721Contract<'a, T, C, E, Q>, name: Option<String>) -> Self {
-        Self { contract, name }
+    pub fn new(contract: Cw721Contract<'a, T, C, E, Q>) -> Self {
+        Self { contract }
     }
 }
 
