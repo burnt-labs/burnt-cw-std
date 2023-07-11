@@ -113,9 +113,7 @@ mod tests {
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("primary sales added");
-        let primary_sales = sales
-            .query(&deps.as_ref(), env.clone(), query_msg)
-            .unwrap();
+        let primary_sales = sales.query(&deps.as_ref(), env.clone(), query_msg).unwrap();
         let active_primary_sale = sales
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();

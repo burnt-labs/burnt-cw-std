@@ -19,9 +19,8 @@ where
         let primary_sales = self.primary_sales.load(deps.storage)?;
         for sale in primary_sales {
             if sale.disabled {
-                continue
-            } else if (sale.start_time.le(&env.block.time)) && sale.end_time.gte(&env.block.time)
-            {
+                continue;
+            } else if (sale.start_time.le(&env.block.time)) && sale.end_time.ge(&env.block.time) {
                 return Ok(QueryResp::ActivePrimarySale(Some(sale)));
             }
         }

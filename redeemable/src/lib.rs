@@ -33,9 +33,7 @@ pub struct InstantiateMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum ExecuteMsg {
-    RedeemItem(String),
-}
+pub enum ExecuteMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -74,12 +72,7 @@ impl Module for Redeemable<'_> {
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        match msg {
-            ExecuteMsg::RedeemItem(token_id) => {
-                self.redeem_item(deps, env, info, token_id)?;
-            }
-        }
-        Ok(Response::new())
+        unimplemented!("execute not implemented")
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {

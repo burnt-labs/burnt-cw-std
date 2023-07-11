@@ -79,8 +79,7 @@ where
         info: MessageInfo,
         msg: ExecuteMsg<T, E>,
     ) -> Result<Response, Self::Error> {
-        self.contract
-            .execute(deps.branch(), env, info, msg)?;
+        self.contract.execute(deps.branch(), env, info, msg)?;
         Ok(Response::new())
     }
 
