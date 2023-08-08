@@ -2,6 +2,7 @@
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
+    use allowable::Allowable;
     use burnt_glue::module::Module;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
@@ -30,6 +31,7 @@ mod tests {
 
         let sellable = Sellable::<Empty, Empty, Empty, Empty>::new(
             Rc::new(RefCell::new(Tokens::default())),
+            Rc::new(RefCell::new(Allowable::default())),
             Rc::new(RefCell::new(Ownable::default())),
             Map::new("listed_tokens"),
         );
@@ -113,9 +115,7 @@ mod tests {
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("primary sales added");
-        let primary_sales = sales
-            .query(&deps.as_ref(), env.clone(), query_msg)
-            .unwrap();
+        let primary_sales = sales.query(&deps.as_ref(), env.clone(), query_msg).unwrap();
         let active_primary_sale = sales
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();

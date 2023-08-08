@@ -10,6 +10,7 @@ use state::LISTED_TOKENS;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use allowable::Allowable;
 use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
@@ -29,6 +30,7 @@ where
     E: CustomMsg,
     C: CustomMsg,
 {
+    pub allowable: Rc<RefCell<Allowable<'a>>>,
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
     pub listed_tokens: Map<'a, &'a str, Coin>,
@@ -42,6 +44,7 @@ where
     C: CustomMsg,
 {
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
+    pub allowable: Rc<RefCell<Allowable<'a>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
     pub listed_tokens: Map<'a, &'a str, Coin>,
     pub redeemable: Rc<RefCell<Redeemable<'a>>>,
@@ -56,6 +59,7 @@ where
 {
     fn default() -> Self {
         Self {
+            allowable: Rc::new(RefCell::new(Allowable::default())),
             tokens: Rc::new(RefCell::new(Tokens::default())),
             ownable: Rc::new(RefCell::new(Ownable::default())),
             listed_tokens: LISTED_TOKENS,
@@ -72,6 +76,7 @@ where
 {
     fn default() -> Self {
         Self {
+            allowable: Rc::new(RefCell::new(Allowable::default())),
             tokens: Rc::new(RefCell::new(Tokens::default())),
             ownable: Rc::new(RefCell::new(Ownable::default())),
             listed_tokens: LISTED_TOKENS,

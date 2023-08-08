@@ -1,6 +1,7 @@
 use std::{cell::RefCell, ops::Sub, rc::Rc};
 
 use crate::{errors::ContractError, RSellable, Sellable};
+use allowable::Allowable;
 use burnt_glue::response::Response;
 use cosmwasm_std::{BankMsg, Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo, Order, Uint128};
 use cw_storage_plus::Map;
@@ -19,11 +20,13 @@ where
 {
     pub fn new(
         tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
+        allowable_module: Rc<RefCell<Allowable<'a>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
     ) -> Self {
         Self {
             tokens: tokens_module,
+            allowable: allowable_module,
             ownable: ownable_module,
             listed_tokens,
         }
@@ -89,58 +92,56 @@ where
         info: MessageInfo,
         token_id: String,
     ) -> Result<Response, ContractError> {
+        let allowable = &self.allowable.borrow();
+        check_is_allowed(&deps.as_ref(), allowable, &info)?;
+
         // check if enough fee was sent
         match info.funds.as_slice() {
-            [fund] => {
-                self.listed_tokens
-                    .load(deps.storage, token_id.as_str())
-                    .map_err(|_| ContractError::NoListedTokensError)
-                    .and_then(|price| {
-                        if fund.denom.ne(&price.denom) {
-                            Err(ContractError::WrongFundError)
-                        } else if fund.amount.ge(&price.amount) {
-                            let token_metadata = self
-                                .tokens
-                                .borrow()
-                                .contract
-                                .tokens
-                                .load(deps.storage, &token_id)
-                                .map_err(|_| ContractError::NoMetadataPresent)?;
-                            self.tokens
-                                .borrow_mut()
-                                .contract
-                                .tokens
-                                .update::<_, ContractError>(
-                                    deps.storage,
-                                    token_id.as_str(),
-                                    |old| {
-                                        let mut token_info = old.unwrap();
-                                        token_info.owner = info.sender.clone();
-                                        Ok(token_info)
-                                    },
-                                )?;
-                            self.listed_tokens.remove(deps.storage, &token_id);
+            [fund] => self
+                .listed_tokens
+                .load(deps.storage, token_id.as_str())
+                .map_err(|_| ContractError::NoListedTokensError)
+                .and_then(|price| {
+                    if fund.denom.ne(&price.denom) {
+                        Err(ContractError::WrongFundError)
+                    } else if fund.amount.ge(&price.amount) {
+                        let token_metadata = self
+                            .tokens
+                            .borrow()
+                            .contract
+                            .tokens
+                            .load(deps.storage, &token_id)
+                            .map_err(|_| ContractError::NoMetadataPresent)?;
+                        self.tokens
+                            .borrow_mut()
+                            .contract
+                            .tokens
+                            .update::<_, ContractError>(deps.storage, token_id.as_str(), |old| {
+                                let mut token_info = old.unwrap();
+                                token_info.owner = info.sender.clone();
+                                Ok(token_info)
+                            })?;
+                        self.listed_tokens.remove(deps.storage, &token_id);
 
-                            let delta = fund.amount.sub(price.amount);
-                            let mut messages = vec![BankMsg::Send {
-                                to_address: token_metadata.owner.to_string(),
-                                amount: vec![price.clone()],
-                            }];
-                            if !delta.is_zero() {
-                                messages.push(BankMsg::Send {
-                                    to_address: info.sender.to_string(),
-                                    amount: vec![Coin::new(delta.u128(), &price.denom)],
-                                })
-                            }
-                            return Ok(Response::new().add_messages(messages));
-                        } else {
-                            return Err(ContractError::InsufficientFundsError {
-                                fund: fund.amount,
-                                seat_price: price.amount,
-                            });
+                        let delta = fund.amount.sub(price.amount);
+                        let mut messages = vec![BankMsg::Send {
+                            to_address: token_metadata.owner.to_string(),
+                            amount: vec![price.clone()],
+                        }];
+                        if !delta.is_zero() {
+                            messages.push(BankMsg::Send {
+                                to_address: info.sender.to_string(),
+                                amount: vec![Coin::new(delta.u128(), &price.denom)],
+                            })
                         }
-                    })
-            }
+                        return Ok(Response::new().add_messages(messages));
+                    } else {
+                        return Err(ContractError::InsufficientFundsError {
+                            fund: fund.amount,
+                            seat_price: price.amount,
+                        });
+                    }
+                }),
             [] => Err(ContractError::NoFundsPresent),
             _ => Err(ContractError::MultipleFundsError),
         }
@@ -151,6 +152,9 @@ where
         deps: &mut DepsMut,
         info: MessageInfo,
     ) -> Result<Response, ContractError> {
+        let allowable = &self.allowable.borrow();
+        check_is_allowed(&deps.as_ref(), allowable, &info)?;
+
         let denom_name: String;
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;
@@ -238,12 +242,14 @@ where
 {
     pub fn new(
         token_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
+        allowable_module: Rc<RefCell<Allowable<'a>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
         redeemable_module: Rc<RefCell<Redeemable<'a>>>,
     ) -> Self {
         Self {
             tokens: token_module,
+            allowable: allowable_module,
             ownable: ownable_module,
             listed_tokens,
             redeemable: redeemable_module,
@@ -269,7 +275,8 @@ where
                     .contract
                     .tokens
                     .may_load(deps.storage, token_id)
-                    .unwrap().is_some()
+                    .unwrap()
+                    .is_some()
                 {
                     check_redeemable(&deps.as_ref(), &env, &info, token_id, redeemable)?;
                     self.listed_tokens
@@ -462,6 +469,17 @@ where
             Err(ContractError::NoFundsPresent)
         }
     }
+}
+
+fn check_is_allowed(
+    deps: &Deps,
+    allowable: &Allowable,
+    info: &MessageInfo,
+) -> Result<(), ContractError> {
+    if !allowable.is_allowed(deps, info.sender.clone())? {
+        return Err(ContractError::Unauthorized);
+    }
+    Ok(())
 }
 
 fn check_ownable(
