@@ -118,7 +118,7 @@ where
             ExecuteMsg::Buy {} => self.try_buy(deps, &env, info, None),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy(deps, &env, info, Some(token_id)),
-            ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
+            ExecuteMsg::Delist { token_id } => self.try_delist(deps, env, info, token_id),
         }
     }
 
@@ -166,7 +166,7 @@ where
             ExecuteMsg::Buy {} => self.try_buy(deps, &env, info, None),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
             ExecuteMsg::BuyToken { token_id } => self.try_buy(deps, &env, info, Some(token_id)),
-            ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
+            ExecuteMsg::Delist { token_id } => self.try_delist(deps, env, info, token_id),
         }
     }
 

@@ -41,10 +41,11 @@ where
     pub fn try_delist(
         &mut self,
         deps: &mut DepsMut,
+        env: Env,
         info: MessageInfo,
         token_id: String,
     ) -> Result<Response, ContractError> {
-        delist_helper(self, deps, info, token_id)
+        delist_helper(self, deps, env, info, token_id)
     }
 
     pub fn try_buy(
@@ -97,10 +98,11 @@ where
     pub fn try_delist(
         &mut self,
         deps: &mut DepsMut,
+        env: Env,
         info: MessageInfo,
         token_id: String,
     ) -> Result<Response, ContractError> {
-        delist_helper(self, deps, info, token_id)
+        delist_helper(self, deps, env, info, token_id)
     }
 
     pub fn try_buy(
@@ -175,6 +177,7 @@ where
     }
     let resp = Response::new().add_event(Event::new("sellable-list_items").add_attributes(vec![
         ("by", info.sender.as_str()),
+        ("contract_address", env.contract.address.as_str()),
         (
             "listings",
             serde_json::to_string(&listings).unwrap().as_str(),
@@ -187,6 +190,7 @@ where
 fn delist_helper<T, C, E, Q>(
     sellable_module: &dyn SellableModule<T, C, E, Q>,
     deps: &mut DepsMut,
+    env: Env,
     info: MessageInfo,
     token_id: String,
 ) -> Result<Response, ContractError>
@@ -214,6 +218,7 @@ where
         let resp =
             Response::new().add_event(Event::new("sellable-delist_item").add_attributes(vec![
                 ("by", info.sender.as_str()),
+                ("contract_address", env.contract.address.as_str()),
                 ("token_id", token_id.as_str()),
             ]));
         Ok(resp)
@@ -294,6 +299,7 @@ where
                     let mut resp = Response::new().add_event(
                         Event::new("sellable-buy_item").add_attributes(vec![
                             ("buyer", info.sender.as_str()),
+                            ("contract_address", env.contract.address.as_str()),
                             ("seller", token_metadata.owner.as_str()),
                             ("purchased_token_id", token_id.as_str()),
                             ("price", serde_json::to_string(&price).unwrap().as_str()),

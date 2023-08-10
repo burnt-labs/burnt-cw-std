@@ -100,6 +100,7 @@ mod tests {
             events[0].attributes,
             vec![
                 Attribute::new("by".to_string(), info.sender.to_string()),
+                Attribute::new("contract_address".to_string(), env.contract.address.to_string()),
                 Attribute::new(
                     "listings".to_string(),
                     serde_json::to_string(&listings).unwrap().as_str()
@@ -243,6 +244,7 @@ mod tests {
             events[0].attributes,
             vec![
                 Attribute::new("buyer".to_string(), BUYER.to_string()),
+                Attribute::new("contract_address".to_string(), env.contract.address.to_string()),
                 Attribute::new("seller".to_string(), CREATOR.to_string()),
                 Attribute::new("purchased_token_id".to_string(), "1".to_string()),
                 Attribute::new(
@@ -342,7 +344,7 @@ mod tests {
 
         // De-list the ticket
         let res = sellable
-            .try_delist(&mut deps.as_mut(), info.clone(), "1".to_string())
+            .try_delist(&mut deps.as_mut(), env.clone(), info.clone(), "1".to_string())
             .unwrap();
         let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
         assert_eq!(result.tokens.len(), 0);
@@ -354,6 +356,7 @@ mod tests {
             events[0].attributes,
             vec![
                 Attribute::new("by".to_string(), info.sender.to_string()),
+                Attribute::new("contract_address".to_string(), env.contract.address.to_string()),
                 Attribute::new("token_id".to_string(), "1".to_string()),
             ]
         );
