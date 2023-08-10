@@ -106,13 +106,14 @@ where
     fn instantiate(
         &mut self,
         deps: &mut DepsMut,
-        _: &Env,
+        env: &Env,
         info: &MessageInfo,
         msg: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         self.metadata.save(deps.storage, &msg.metadata)?;
         let resp = Response::new().add_event(Event::new("metadata-set")).add_attributes(
             vec![
+                ("contract_address", env.contract.address.to_string()),
                 ("owner", info.sender.to_string()),
                 ("metadata", serde_json::to_string(&msg.metadata).unwrap()),
             ]
@@ -124,7 +125,7 @@ where
     fn execute(
         &mut self,
         deps: &mut DepsMut,
-        _: Env,
+        env: Env,
         info: MessageInfo,
         msg: Self::ExecuteMsg,
     ) -> Result<Response, Self::Error> {
@@ -138,6 +139,7 @@ where
                     self.metadata.save(deps.storage, &meta).unwrap();
                     let resp = Response::new().add_event(Event::new("metadata-set")).add_attributes(
                         vec![
+                            ("contract_address", env.contract.address.to_string()),
                             ("owner", info.sender.to_string()),
                             ("metadata", serde_json::to_string(&meta).unwrap()),
                         ],
