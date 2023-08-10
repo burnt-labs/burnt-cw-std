@@ -2,6 +2,7 @@ pub mod errors;
 pub mod execute;
 pub mod msg;
 pub mod query;
+mod sellable_module;
 pub mod state;
 mod test;
 
@@ -114,9 +115,9 @@ where
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
         match msg {
-            ExecuteMsg::Buy {} => self.try_buy(deps, info),
+            ExecuteMsg::Buy {} => self.try_buy(deps, &env, info, None),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
-            ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, info, token_id),
+            ExecuteMsg::BuyToken { token_id } => self.try_buy(deps, &env, info, Some(token_id)),
             ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
         }
     }
@@ -161,12 +162,12 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        return match msg {
-            ExecuteMsg::Buy {} => self.try_buy(deps, &env, info),
+        match msg {
+            ExecuteMsg::Buy {} => self.try_buy(deps, &env, info, None),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
-            ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, &env, info, token_id),
+            ExecuteMsg::BuyToken { token_id } => self.try_buy(deps, &env, info, Some(token_id)),
             ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
-        };
+        }
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {

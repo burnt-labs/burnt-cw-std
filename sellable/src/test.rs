@@ -105,7 +105,7 @@ mod tests {
         match list_result {
             Ok(_) => panic!(),
             Err(err) => match err {
-                ContractError::NoMetadataPresent => {}
+                ContractError::TokenIDNotFoundError => {}
                 _ => panic!(),
             },
         }
@@ -178,7 +178,7 @@ mod tests {
 
         // Buy token with no funds
         sellable
-            .try_buy_token(&mut deps.as_mut(), info, "1".to_string())
+            .try_buy(&mut deps.as_mut(), &env, info, Some("1".to_string()))
             .expect_err("Expect error");
 
         // Buy token with insufficient funds
@@ -190,7 +190,7 @@ mod tests {
             }],
         );
         sellable
-            .try_buy_token(&mut deps.as_mut(), i_funds, "1".to_string())
+            .try_buy(&mut deps.as_mut(), &env, i_funds, Some("1".to_string()))
             .expect_err("Expect error");
 
         // Buy token with sufficient funds and wrong denom
@@ -202,7 +202,7 @@ mod tests {
             }],
         );
         sellable
-            .try_buy_token(&mut deps.as_mut(), i_funds, "1".to_string())
+            .try_buy(&mut deps.as_mut(), &env, i_funds, Some("1".to_string()))
             .expect_err("Expect error");
 
         // Buy token with sufficient funds and enough denom
@@ -214,7 +214,7 @@ mod tests {
             }],
         );
         let buy_resp = sellable
-            .try_buy_token(&mut deps.as_mut(), new_funds, "1".to_string())
+            .try_buy(&mut deps.as_mut(), &env, new_funds, Some("1".to_string()))
             .expect("purchased ticket");
 
         let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
