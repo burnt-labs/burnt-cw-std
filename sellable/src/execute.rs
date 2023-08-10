@@ -2,12 +2,11 @@ use std::{cell::RefCell, ops::Sub, rc::Rc};
 
 use crate::{errors::ContractError, sellable_module::SellableModule, RSellable, Sellable};
 use burnt_glue::response::Response;
-use cosmwasm_std::{BankMsg, Coin, CustomMsg, DepsMut, Env, MessageInfo, Order, Uint128};
+use cosmwasm_std::{BankMsg, Coin, CustomMsg, DepsMut, Env, Event, MessageInfo, Order, Uint128};
 use cw_storage_plus::Map;
 use ownable::Ownable;
 use redeemable::Redeemable;
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::json;
 use token::Tokens;
 
 impl<'a, T, C, E, Q> Sellable<'a, T, C, E, Q>
@@ -174,7 +173,15 @@ where
             return Err(ContractError::InvalidListingPrice);
         }
     }
-    Ok(Response::new().add_attribute("list", json!(listings).to_string()))
+    let resp = Response::new().add_event(Event::new("sellable-list_items").add_attributes(vec![
+        ("by", info.sender.as_str()),
+        (
+            "listings",
+            serde_json::to_string(&listings).unwrap().as_str(),
+        ),
+    ]));
+
+    Ok(resp)
 }
 
 fn delist_helper<T, C, E, Q>(
@@ -204,7 +211,12 @@ where
         .map_err(|_| ContractError::TokenIDNotFoundError)?;
     if listed_token.owner.eq(&info.sender) {
         listed_tokens.remove(deps.storage, &token_id);
-        Ok(Response::new().add_attribute("delist", token_id))
+        let resp =
+            Response::new().add_event(Event::new("sellable-delist_item").add_attributes(vec![
+                ("by", info.sender.as_str()),
+                ("token_id", token_id.as_str()),
+            ]));
+        Ok(resp)
     } else {
         Err(ContractError::Unauthorized)
     }
@@ -279,6 +291,14 @@ where
                         .tokens
                         .load(deps.storage, &token_id)
                         .map_err(|_| ContractError::NoMetadataPresent)?;
+                    let mut resp = Response::new().add_event(
+                        Event::new("sellable-buy_item").add_attributes(vec![
+                            ("buyer", info.sender.as_str()),
+                            ("seller", token_metadata.owner.as_str()),
+                            ("purchased_token_id", token_id.as_str()),
+                            ("price", serde_json::to_string(&price).unwrap().as_str()),
+                        ]),
+                    );
                     tokens
                         .borrow_mut()
                         .contract
@@ -301,8 +321,8 @@ where
                             amount: vec![Coin::new(delta.u128(), &price.denom)],
                         })
                     }
-
-                    return Ok(Response::new().add_messages(messages));
+                    resp = resp.add_messages(messages);
+                    return Ok(resp);
                 } else {
                     return Err(ContractError::InsufficientFundsError {
                         fund: fund.amount,

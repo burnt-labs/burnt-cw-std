@@ -4,7 +4,7 @@ mod tests {
 
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
-        Addr, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Env, MessageInfo, Uint128,
+        Addr, Attribute, BankMsg, Coin, CosmosMsg, DepsMut, Empty, Env, MessageInfo, Uint128,
     };
     use cw721_base::{msg::InstantiateMsg as cw721_baseInstantiateMsg, MintMsg};
     use cw_storage_plus::Map;
@@ -84,10 +84,28 @@ mod tests {
                 denom: "uturnt".to_string(),
             },
         )]);
-        sellable
-            .try_list(&mut deps.as_mut(), env.clone(), info.clone(), listings)
+        let res = sellable
+            .try_list(
+                &mut deps.as_mut(),
+                env.clone(),
+                info.clone(),
+                listings.clone(),
+            )
             .unwrap();
-
+        // make sure listed token events are emitted
+        let events = res.response.events;
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].ty, "sellable-list_items".to_string(),);
+        assert_eq!(
+            events[0].attributes,
+            vec![
+                Attribute::new("by".to_string(), info.sender.to_string()),
+                Attribute::new(
+                    "listings".to_string(),
+                    serde_json::to_string(&listings).unwrap().as_str()
+                ),
+            ]
+        );
         // List a non-minted token
         let non_minted_listings = schemars::Map::from([(
             "hello".to_string(),
@@ -217,6 +235,27 @@ mod tests {
             .try_buy(&mut deps.as_mut(), &env, new_funds, Some("1".to_string()))
             .expect("purchased ticket");
 
+        // make sure listed token events are emitted
+        let events = buy_resp.response.events;
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].ty, "sellable-buy_item".to_string(),);
+        assert_eq!(
+            events[0].attributes,
+            vec![
+                Attribute::new("buyer".to_string(), BUYER.to_string()),
+                Attribute::new("seller".to_string(), CREATOR.to_string()),
+                Attribute::new("purchased_token_id".to_string(), "1".to_string()),
+                Attribute::new(
+                    "price".to_string(),
+                    serde_json::to_string(&Coin {
+                        amount: Uint128::new(10),
+                        denom: "uturnt".to_string(),
+                    })
+                    .unwrap()
+                ),
+            ]
+        );
+
         let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
         assert_eq!(result.tokens.len(), 0);
 
@@ -302,10 +341,21 @@ mod tests {
         assert_eq!(result.tokens.len(), 1);
 
         // De-list the ticket
-        sellable
-            .try_delist(&mut deps.as_mut(), info, "1".to_string())
+        let res = sellable
+            .try_delist(&mut deps.as_mut(), info.clone(), "1".to_string())
             .unwrap();
         let result = sellable.listed_tokens(&deps.as_ref(), None, None).unwrap();
         assert_eq!(result.tokens.len(), 0);
+        // make sure listed token events are emitted
+        let events = res.response.events;
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].ty, "sellable-delist_item".to_string(),);
+        assert_eq!(
+            events[0].attributes,
+            vec![
+                Attribute::new("by".to_string(), info.sender.to_string()),
+                Attribute::new("token_id".to_string(), "1".to_string()),
+            ]
+        );
     }
 }
