@@ -1,5 +1,5 @@
-use cosmwasm_std::StdError;
 use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::{Event, StdError};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -114,7 +114,9 @@ impl<'a> Module for Ownable<'a> {
                     Err(Unauthorized {})
                 } else {
                     self.set_owner(deps, &owner)?;
-                    let resp = Response::new();
+                    let mut resp = Response::new();
+                    resp = resp
+                        .add_event(Event::new("ownable-set_owner").add_attribute("owner", owner));
                     Ok(resp)
                 }
             }
