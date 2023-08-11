@@ -33,6 +33,12 @@ where
         redeemable: &Redeemable,
     ) -> Result<(), ContractError>;
 
+    fn check_is_allowed(
+        &self,
+        deps: &Deps,
+        info: &MessageInfo,
+    ) -> Result<(), ContractError>;
+
     fn get_token_module(&self) -> Rc<RefCell<Tokens<'a, T, C, E, Q>>>;
 
     fn get_ownable_module(&self) -> Rc<RefCell<Ownable<'a>>>;
@@ -72,6 +78,18 @@ where
         _redeemable: &Redeemable,
     ) -> Result<(), ContractError> {
         // Sellable module does not check redeemable
+        Ok(())
+    }
+
+    fn check_is_allowed(
+        &self,
+        deps: &Deps,
+        info: &MessageInfo,
+    ) -> Result<(), ContractError> {
+        let allowable = &self.allowable.borrow();
+        if !allowable.is_allowed(deps, info.sender.clone())? {
+            return Err(ContractError::Unauthorized);
+        }
         Ok(())
     }
 
@@ -124,6 +142,18 @@ where
         let locked_tokens = redeemable.locked_items.load(deps.storage)?;
         if locked_tokens.contains(token_id) {
             return Err(ContractError::TicketRedeemed);
+        }
+        Ok(())
+    }
+
+    fn check_is_allowed(
+        &self,
+        deps: &Deps,
+        info: &MessageInfo,
+    ) -> Result<(), ContractError> {
+        let allowable = &self.allowable.borrow();
+        if !allowable.is_allowed(deps, info.sender.clone())? {
+            return Err(ContractError::Unauthorized);
         }
         Ok(())
     }

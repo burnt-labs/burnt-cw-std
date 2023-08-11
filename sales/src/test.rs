@@ -208,8 +208,7 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", CREATOR.to_string()),
-                Attribute::new("amount", "10"),
-                Attribute::new("denom", "USDC"),
+                Attribute::new("amount",serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
             ]
         );
         assert_eq!(events[3].ty, "sales-refund_sent");
@@ -218,8 +217,7 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", buyer_info.borrow().sender.to_string()),
-                Attribute::new("amount", "10"),
-                Attribute::new("denom", "USDC"),
+                Attribute::new("amount",serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
             ]
         );
         // create a new primary sale
@@ -357,8 +355,7 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", CREATOR.to_string()),
-                Attribute::new("amount", "10"),
-                Attribute::new("denom", "USDC"),
+                Attribute::new("amount", serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
             ]
         );
         assert_eq!(events[2].ty, "sales-refund_sent");
@@ -367,8 +364,7 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", buyer_info.borrow().sender.to_string()),
-                Attribute::new("amount", "10"),
-                Attribute::new("denom", "USDC"),
+                Attribute::new("amount", serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
             ]
         );
     }

@@ -184,8 +184,7 @@ where
                 response = response.add_event(Event::new("sales-funds_sent").add_attributes(vec![
                     ("contract_address", env.contract.address.to_string()),
                     ("to", ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string()),
-                    ("amount", sale.price[0].amount.to_string()),
-                    ("denom", sale.price[0].denom.clone()),
+                    ("amount", serde_json::to_string(&sale.price[0]).unwrap())
                 ]));
 
                 if sale.price[0].amount.lt(&info.funds[0].amount) {
@@ -204,8 +203,7 @@ where
                         response.add_event(Event::new("sales-refund_sent").add_attributes(vec![
                             ("contract_address", env.contract.address.to_string()),
                             ("to", info.sender.to_string()),
-                            ("amount", refund_amount.to_string()),
-                            ("denom", sale.price[0].denom.clone()),
+                            ("amount", serde_json::to_string(&Coin{ amount: refund_amount, denom: sale.price[0].denom.clone()}).unwrap()),
                         ]));
                 }
                 self.primary_sales.save(deps.storage, &primary_sales)?;
