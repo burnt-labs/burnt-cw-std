@@ -1,6 +1,7 @@
 use std::{cell::RefCell, ops::Sub, rc::Rc};
 
 use crate::{errors::ContractError, sellable_module::SellableModule, RSellable, Sellable};
+use allowable::Allowable;
 use burnt_glue::response::Response;
 use cosmwasm_std::{BankMsg, Coin, CustomMsg, DepsMut, Env, Event, MessageInfo, Order, Uint128};
 use cw_storage_plus::Map;
@@ -18,11 +19,13 @@ where
 {
     pub fn new(
         tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
+        allowable_module: Rc<RefCell<Allowable<'a>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
     ) -> Self {
         Self {
             tokens: tokens_module,
+            allowable: allowable_module,
             ownable: ownable_module,
             listed_tokens,
         }
@@ -73,12 +76,14 @@ where
 {
     pub fn new(
         token_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
+        allowable_module: Rc<RefCell<Allowable<'a>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
         redeemable_module: Rc<RefCell<Redeemable<'a>>>,
     ) -> Self {
         Self {
             tokens: token_module,
+            allowable: allowable_module,
             ownable: ownable_module,
             listed_tokens,
             redeemable: redeemable_module,
@@ -269,6 +274,7 @@ where
     E: CustomMsg,
     C: CustomMsg,
 {
+    sellable_module.check_is_allowed(&deps.as_ref(), &info)?;
     let redeemable = sellable_module.get_redeemable_module();
     let listed_tokens = sellable_module.get_listed_tokens();
     let tokens = sellable_module.get_token_module();
@@ -335,7 +341,7 @@ where
                             vec![
                                 ("to", info.sender.as_str()),
                                 ("contract_address", env.contract.address.as_str()),
-                                ("amount", serde_json::to_string(&delta).unwrap().as_str()),
+                                ("amount", serde_json::to_string(&Coin { amount: delta, denom: price.denom }).unwrap().as_str()),
                             ],
                         ));
                     }

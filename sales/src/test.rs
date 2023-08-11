@@ -2,6 +2,7 @@
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
+    use allowable::Allowable;
     use burnt_glue::module::Module;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},
@@ -30,6 +31,7 @@ mod tests {
 
         let sellable = Sellable::<Empty, Empty, Empty, Empty>::new(
             Rc::new(RefCell::new(Tokens::default())),
+            Rc::new(RefCell::new(Allowable::default())),
             Rc::new(RefCell::new(Ownable::default())),
             Map::new("listed_tokens"),
         );
