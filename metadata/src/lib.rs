@@ -1,5 +1,5 @@
-use cosmwasm_std::{StdError, Event};
 use cosmwasm_std::{Deps, DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::{Event, StdError};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
@@ -111,14 +111,16 @@ where
         msg: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         self.metadata.save(deps.storage, &msg.metadata)?;
-        let resp = Response::new().add_event(Event::new("metadata-instantiate")).add_attributes(
-            vec![
-                ("contract_address", env.contract.address.to_string()),
-                ("owner", info.sender.to_string()),
-                ("metadata", serde_json::to_string(&msg.metadata).unwrap()),
-            ]
-            .into_iter(),
-        );
+        let resp = Response::new()
+            .add_event(Event::new("metadata-instantiate"))
+            .add_attributes(
+                vec![
+                    ("contract_address", env.contract.address.to_string()),
+                    ("owner", info.sender.to_string()),
+                    ("metadata", serde_json::to_string(&msg.metadata).unwrap()),
+                ]
+                .into_iter(),
+            );
         Ok(resp)
     }
 
@@ -137,13 +139,13 @@ where
                     Err(MetadataError::Unauthorized {})
                 } else {
                     self.metadata.save(deps.storage, &meta).unwrap();
-                    let resp = Response::new().add_event(Event::new("metadata-set_metadata")).add_attributes(
-                        vec![
+                    let resp = Response::new()
+                        .add_event(Event::new("metadata-set_metadata"))
+                        .add_attributes(vec![
                             ("contract_address", env.contract.address.to_string()),
                             ("owner", info.sender.to_string()),
                             ("metadata", serde_json::to_string(&meta).unwrap()),
-                        ],
-                    );
+                        ]);
                     Ok(resp)
                 }
             }

@@ -170,7 +170,7 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(None) => {},
+            crate::msg::QueryResp::ActivePrimarySale(None) => {}
             _ => panic!(),
         }
         // make sure sale buy event is emitted
@@ -196,10 +196,7 @@ mod tests {
             events[1].attributes,
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new(
-                    "sale_object",
-                    serde_json::to_string(&primary_sale).unwrap()
-                ),
+                Attribute::new("sale_object", serde_json::to_string(&primary_sale).unwrap()),
             ]
         );
         assert_eq!(events[2].ty, "sales-funds_sent");
@@ -208,7 +205,14 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", CREATOR.to_string()),
-                Attribute::new("amount",serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
+                Attribute::new(
+                    "amount",
+                    serde_json::to_string(&Coin {
+                        amount: Uint128::from(10_u64),
+                        denom: "USDC".to_string()
+                    })
+                    .unwrap()
+                ),
             ]
         );
         assert_eq!(events[3].ty, "sales-refund_sent");
@@ -217,7 +221,14 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", buyer_info.borrow().sender.to_string()),
-                Attribute::new("amount",serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
+                Attribute::new(
+                    "amount",
+                    serde_json::to_string(&Coin {
+                        amount: Uint128::from(10_u64),
+                        denom: "USDC".to_string()
+                    })
+                    .unwrap()
+                ),
             ]
         );
         // create a new primary sale
@@ -247,12 +258,7 @@ mod tests {
         .to_string();
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         let res = sales
-            .execute(
-                &mut deps.as_mut(),
-                env.clone(),
-                info.clone(),
-                execute_msg,
-            )
+            .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("any ongoing sale halted");
         // make sure alse halt event is emitted
         let events = res.response.events;
@@ -274,7 +280,7 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(None) => {},
+            crate::msg::QueryResp::ActivePrimarySale(None) => {}
             _ => panic!(),
         }
 
@@ -355,7 +361,14 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", CREATOR.to_string()),
-                Attribute::new("amount", serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
+                Attribute::new(
+                    "amount",
+                    serde_json::to_string(&Coin {
+                        amount: Uint128::from(10_u64),
+                        denom: "USDC".to_string()
+                    })
+                    .unwrap()
+                ),
             ]
         );
         assert_eq!(events[2].ty, "sales-refund_sent");
@@ -364,7 +377,14 @@ mod tests {
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new("to", buyer_info.borrow().sender.to_string()),
-                Attribute::new("amount", serde_json::to_string(&Coin{ amount: Uint128::from(10_u64), denom: "USDC".to_string()}).unwrap()),
+                Attribute::new(
+                    "amount",
+                    serde_json::to_string(&Coin {
+                        amount: Uint128::from(10_u64),
+                        denom: "USDC".to_string()
+                    })
+                    .unwrap()
+                ),
             ]
         );
     }

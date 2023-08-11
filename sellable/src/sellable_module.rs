@@ -33,11 +33,7 @@ where
         redeemable: &Redeemable,
     ) -> Result<(), ContractError>;
 
-    fn check_is_allowed(
-        &self,
-        deps: &Deps,
-        info: &MessageInfo,
-    ) -> Result<(), ContractError>;
+    fn check_is_allowed(&self, deps: &Deps, info: &MessageInfo) -> Result<(), ContractError>;
 
     fn get_token_module(&self) -> Rc<RefCell<Tokens<'a, T, C, E, Q>>>;
 
@@ -81,11 +77,7 @@ where
         Ok(())
     }
 
-    fn check_is_allowed(
-        &self,
-        deps: &Deps,
-        info: &MessageInfo,
-    ) -> Result<(), ContractError> {
+    fn check_is_allowed(&self, deps: &Deps, info: &MessageInfo) -> Result<(), ContractError> {
         let allowable = &self.allowable.borrow();
         if !allowable.is_allowed(deps, info.sender.clone())? {
             return Err(ContractError::Unauthorized);
@@ -146,11 +138,7 @@ where
         Ok(())
     }
 
-    fn check_is_allowed(
-        &self,
-        deps: &Deps,
-        info: &MessageInfo,
-    ) -> Result<(), ContractError> {
+    fn check_is_allowed(&self, deps: &Deps, info: &MessageInfo) -> Result<(), ContractError> {
         let allowable = &self.allowable.borrow();
         if !allowable.is_allowed(deps, info.sender.clone())? {
             return Err(ContractError::Unauthorized);

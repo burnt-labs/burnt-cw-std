@@ -337,13 +337,21 @@ where
                             to_address: info.sender.to_string(),
                             amount: vec![Coin::new(delta.u128(), &price.denom)],
                         });
-                        resp = resp.add_event(Event::new("sellable-refund_sent").add_attributes(
-                            vec![
+                        resp = resp.add_event(
+                            Event::new("sellable-refund_sent").add_attributes(vec![
                                 ("to", info.sender.as_str()),
                                 ("contract_address", env.contract.address.as_str()),
-                                ("amount", serde_json::to_string(&Coin { amount: delta, denom: price.denom }).unwrap().as_str()),
-                            ],
-                        ));
+                                (
+                                    "amount",
+                                    serde_json::to_string(&Coin {
+                                        amount: delta,
+                                        denom: price.denom,
+                                    })
+                                    .unwrap()
+                                    .as_str(),
+                                ),
+                            ]),
+                        );
                     }
                     resp = resp.add_messages(messages);
                     return Ok(resp);

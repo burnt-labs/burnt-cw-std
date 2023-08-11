@@ -105,9 +105,7 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage)?;
 
         for sale in primary_sales.iter_mut() {
-            if (!sale.disabled && sale.end_time.gt(&env.block.time))
-                || sale.end_time.gt(&env.block.time)
-            {
+            if !sale.disabled && sale.end_time.gt(&env.block.time) {
                 sale.disabled = true;
                 let resp =
                     Response::new().add_event(Event::new("sales-halt_sale").add_attributes(vec![
@@ -153,9 +151,7 @@ where
                     }
                 }
                 // mint the item
-                let mut response = self
-                    .mint(deps, env.clone(), &info, mint_msg)
-                    .unwrap();
+                let mut response = self.mint(deps, env.clone(), &info, mint_msg).unwrap();
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
@@ -199,12 +195,20 @@ where
                     };
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
-                    response =
-                        response.add_event(Event::new("sales-refund_sent").add_attributes(vec![
+                    response = response.add_event(
+                        Event::new("sales-refund_sent").add_attributes(vec![
                             ("contract_address", env.contract.address.to_string()),
                             ("to", info.sender.to_string()),
-                            ("amount", serde_json::to_string(&Coin{ amount: refund_amount, denom: sale.price[0].denom.clone()}).unwrap()),
-                        ]));
+                            (
+                                "amount",
+                                serde_json::to_string(&Coin {
+                                    amount: refund_amount,
+                                    denom: sale.price[0].denom.clone(),
+                                })
+                                .unwrap(),
+                            ),
+                        ]),
+                    );
                 }
                 self.primary_sales.save(deps.storage, &primary_sales)?;
                 return Ok(response);
@@ -253,10 +257,7 @@ where
                 ("contract_address", env.contract.address.to_string()),
                 ("by", env.contract.address.to_string()),
                 ("for", info.sender.to_string()),
-                (
-                    "token_metadata",
-                    serde_json::to_string(&msg).unwrap(),
-                ),
+                ("token_metadata", serde_json::to_string(&msg).unwrap()),
             ])),
         )
     }
