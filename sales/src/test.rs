@@ -168,7 +168,7 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(None) => assert!(true),
+            crate::msg::QueryResp::ActivePrimarySale(None) => {},
             _ => panic!(),
         }
         // make sure sale buy event is emitted
@@ -196,7 +196,7 @@ mod tests {
                 Attribute::new("contract_address", env.contract.address.to_string()),
                 Attribute::new(
                     "sale_object",
-                    serde_json::to_string(&PrimarySale::from(primary_sale)).unwrap()
+                    serde_json::to_string(&primary_sale).unwrap()
                 ),
             ]
         );
@@ -251,7 +251,7 @@ mod tests {
                 &mut deps.as_mut(),
                 env.clone(),
                 info.clone(),
-                execute_msg.clone(),
+                execute_msg,
             )
             .expect("any ongoing sale halted");
         // make sure alse halt event is emitted
@@ -274,7 +274,7 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(None) => assert!(true),
+            crate::msg::QueryResp::ActivePrimarySale(None) => {},
             _ => panic!(),
         }
 

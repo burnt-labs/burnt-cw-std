@@ -140,7 +140,7 @@ where
             // or the supply cap is 0 (unlimited)
             {
                 // check if enough fee was sent
-                if info.funds.len() == 0 {
+                if info.funds.is_empty() {
                     return Err(ContractError::NoFundsError);
                 } else if info.funds.len() > 1 {
                     return Err(ContractError::MultipleFundsError);
@@ -154,7 +154,7 @@ where
                 }
                 // mint the item
                 let mut response = self
-                    .mint(deps, env.clone(), &info, mint_msg.clone())
+                    .mint(deps, env.clone(), &info, mint_msg)
                     .unwrap();
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
@@ -162,7 +162,7 @@ where
                     sale.disabled = true;
                     response =
                         response.add_event(Event::new("sales-sale_ended").add_attributes(vec![
-                            ("contract_address", env.clone().contract.address.to_string()),
+                            ("contract_address", env.contract.address.to_string()),
                             ("sale_object", serde_json::to_string(&sale).unwrap()),
                         ]));
                 }
@@ -182,7 +182,7 @@ where
                 let cosmos_msg = CosmosMsg::Bank(message);
                 response = response.add_message(cosmos_msg);
                 response = response.add_event(Event::new("sales-funds_sent").add_attributes(vec![
-                    ("contract_address", env.clone().contract.address.to_string()),
+                    ("contract_address", env.contract.address.to_string()),
                     ("to", ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string()),
                     ("amount", sale.price[0].amount.to_string()),
                     ("denom", sale.price[0].denom.clone()),
@@ -202,7 +202,7 @@ where
                     response = response.add_message(refund_cosmos_msg);
                     response =
                         response.add_event(Event::new("sales-refund_sent").add_attributes(vec![
-                            ("contract_address", env.clone().contract.address.to_string()),
+                            ("contract_address", env.contract.address.to_string()),
                             ("to", info.sender.to_string()),
                             ("amount", refund_amount.to_string()),
                             ("denom", sale.price[0].denom.clone()),
@@ -224,7 +224,7 @@ where
     ) -> Result<Response, ContractError> {
         // create the token
         let token = TokenInfo {
-            owner: deps.api.addr_validate(&msg.owner.clone())?,
+            owner: deps.api.addr_validate(&msg.owner)?,
             approvals: vec![],
             token_uri: msg.token_uri.clone(),
             extension: msg.extension.clone(),
@@ -252,12 +252,12 @@ where
 
         Ok(
             Response::new().add_event(Event::new("sales-token_minted").add_attributes(vec![
-                ("contract_address", env.clone().contract.address.to_string()),
-                ("by", env.clone().contract.address.to_string()),
+                ("contract_address", env.contract.address.to_string()),
+                ("by", env.contract.address.to_string()),
                 ("for", info.sender.to_string()),
                 (
                     "token_metadata",
-                    serde_json::to_string(&msg.clone()).unwrap(),
+                    serde_json::to_string(&msg).unwrap(),
                 ),
             ])),
         )
