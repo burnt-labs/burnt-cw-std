@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
 use cosmwasm_std::{
-    BankMsg, Coin, CosmosMsg, CustomMsg, DepsMut, Env, MessageInfo, Timestamp, Uint64,
+    BankMsg, Coin, CosmosMsg, CustomMsg, DepsMut, Env, Event, MessageInfo, Timestamp, Uint64,
 };
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
@@ -72,9 +72,16 @@ where
                 ));
             }
         }
-        primary_sales.push(msg.into());
+        let primary_sale = PrimarySale::from(msg);
+        primary_sales.push(primary_sale.clone());
         self.primary_sales.save(deps.storage, &primary_sales)?;
-        Ok(Response::default())
+        let resp =
+            Response::new().add_event(Event::new("sales-add_primary_sale").add_attributes(vec![
+                ("by", info.sender.to_string()),
+                ("contract_address", env.contract.address.to_string()),
+                ("sale_object", serde_json::to_string(&primary_sale).unwrap()),
+            ]));
+        Ok(resp)
     }
 
     pub fn halt_sale(
@@ -102,8 +109,14 @@ where
                 || sale.end_time.gt(&env.block.time)
             {
                 sale.disabled = true;
+                let resp =
+                    Response::new().add_event(Event::new("sales-halt_sale").add_attributes(vec![
+                        ("by", info.sender.to_string()),
+                        ("contract_address", env.contract.address.to_string()),
+                        ("sale_object", serde_json::to_string(sale).unwrap()),
+                    ]));
                 self.primary_sales.save(deps.storage, &primary_sales)?;
-                return Ok(Response::default());
+                return Ok(resp);
             }
         }
         Err(ContractError::NoOngoingPrimarySaleError)
@@ -140,11 +153,18 @@ where
                     }
                 }
                 // mint the item
-                let mut response = self.mint(deps, env, &info, mint_msg).unwrap();
+                let mut response = self
+                    .mint(deps, env.clone(), &info, mint_msg.clone())
+                    .unwrap();
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
+                    response =
+                        response.add_event(Event::new("sales-sale_ended").add_attributes(vec![
+                            ("contract_address", env.clone().contract.address.to_string()),
+                            ("sale_object", serde_json::to_string(&sale).unwrap()),
+                        ]));
                 }
                 // send funds to creator
                 let ownable = &self.sellable.borrow().ownable;
@@ -161,6 +181,12 @@ where
                 };
                 let cosmos_msg = CosmosMsg::Bank(message);
                 response = response.add_message(cosmos_msg);
+                response = response.add_event(Event::new("sales-funds_sent").add_attributes(vec![
+                    ("contract_address", env.clone().contract.address.to_string()),
+                    ("to", ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string()),
+                    ("amount", sale.price[0].amount.to_string()),
+                    ("denom", sale.price[0].denom.clone()),
+                ]));
 
                 if sale.price[0].amount.lt(&info.funds[0].amount) {
                     // refund user back extra funds
@@ -174,6 +200,13 @@ where
                     };
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
+                    response =
+                        response.add_event(Event::new("sales-refund_sent").add_attributes(vec![
+                            ("contract_address", env.clone().contract.address.to_string()),
+                            ("to", info.sender.to_string()),
+                            ("amount", refund_amount.to_string()),
+                            ("denom", sale.price[0].denom.clone()),
+                        ]));
                 }
                 self.primary_sales.save(deps.storage, &primary_sales)?;
                 return Ok(response);
@@ -185,16 +218,16 @@ where
     pub fn mint(
         &self,
         deps: &mut DepsMut,
-        _env: Env,
+        env: Env,
         info: &MessageInfo,
         msg: MintMsg<T>,
     ) -> Result<Response, ContractError> {
         // create the token
         let token = TokenInfo {
-            owner: deps.api.addr_validate(&msg.owner)?,
+            owner: deps.api.addr_validate(&msg.owner.clone())?,
             approvals: vec![],
-            token_uri: msg.token_uri,
-            extension: msg.extension,
+            token_uri: msg.token_uri.clone(),
+            extension: msg.extension.clone(),
         };
         {
             self.sellable
@@ -207,7 +240,7 @@ where
                     Some(_) => Err(ContractError::TokenModuleError(
                         cw721_base::ContractError::Claimed {},
                     )),
-                    None => Ok(token),
+                    None => Ok(token.clone()),
                 })?;
         }
         self.sellable
@@ -217,11 +250,17 @@ where
             .contract
             .increment_tokens(deps.storage)?;
 
-        Ok(Response::new()
-            .add_attribute("action", "mint")
-            .add_attribute("minter", &info.sender)
-            .add_attribute("owner", msg.owner)
-            .add_attribute("token_id", msg.token_id))
+        Ok(
+            Response::new().add_event(Event::new("sales-token_minted").add_attributes(vec![
+                ("contract_address", env.clone().contract.address.to_string()),
+                ("by", env.clone().contract.address.to_string()),
+                ("for", info.sender.to_string()),
+                (
+                    "token_metadata",
+                    serde_json::to_string(&msg.clone()).unwrap(),
+                ),
+            ])),
+        )
     }
 }
 
