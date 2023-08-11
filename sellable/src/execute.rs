@@ -321,11 +321,23 @@ where
                         to_address: token_metadata.owner.to_string(),
                         amount: vec![price.clone()],
                     }];
+                    resp = resp.add_event(Event::new("sellable-funds_sent").add_attributes(vec![
+                        ("to", token_metadata.owner.as_str()),
+                        ("contract_address", env.contract.address.as_str()),
+                        ("amount", serde_json::to_string(&price).unwrap().as_str()),
+                    ]));
                     if !delta.is_zero() {
                         messages.push(BankMsg::Send {
                             to_address: info.sender.to_string(),
                             amount: vec![Coin::new(delta.u128(), &price.denom)],
-                        })
+                        });
+                        resp = resp.add_event(Event::new("sellable-refund_sent").add_attributes(
+                            vec![
+                                ("to", info.sender.as_str()),
+                                ("contract_address", env.contract.address.as_str()),
+                                ("amount", serde_json::to_string(&delta).unwrap().as_str()),
+                            ],
+                        ));
                     }
                     resp = resp.add_messages(messages);
                     return Ok(resp);
