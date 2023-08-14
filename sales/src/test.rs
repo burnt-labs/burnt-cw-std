@@ -111,7 +111,7 @@ mod tests {
             )
             .expect_err("primary sales should not be added");
         // set block time
-        env.block.time = Timestamp::from_seconds(1666567587_u64);
+        env.block.time = Timestamp::from_seconds(1674567586_u64);
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("primary sales added");
@@ -155,8 +155,9 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert!(sale.disabled),
-            _ => panic!(),
+            // there should be no active primary sale since all item are now bought
+            crate::msg::QueryResp::ActivePrimarySale(Some(_)) => assert!(false),
+            _ => assert!(true),
         }
 
         // create a new primary sale
@@ -190,8 +191,9 @@ mod tests {
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
         match active_primary_sale {
-            crate::msg::QueryResp::ActivePrimarySale(Some(sale)) => assert!(sale.disabled),
-            _ => panic!(),
+            // there should be no active primary sale since the active primary sale is halted
+            crate::msg::QueryResp::ActivePrimarySale(Some(_)) => assert!(false),
+            _ => assert!(true),
         }
 
         // TEST: unlimited number of item for sale

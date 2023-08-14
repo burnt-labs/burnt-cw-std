@@ -142,7 +142,7 @@ mod tests {
         match list_result {
             Ok(_) => panic!(),
             Err(err) => match err {
-                ContractError::NoMetadataPresent => {}
+                ContractError::TokenIDNotFoundError => {}
                 _ => panic!(),
             },
         }
