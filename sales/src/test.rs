@@ -31,7 +31,6 @@ mod tests {
 
         let sellable = Sellable::<Empty, Empty, Empty, Empty>::new(
             Rc::new(RefCell::new(Tokens::default())),
-            Rc::new(RefCell::new(Allowable::default())),
             Rc::new(RefCell::new(Ownable::default())),
             Map::new("listed_tokens"),
         );
