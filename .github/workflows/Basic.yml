@@ -1,6 +1,13 @@
 # Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+
+  pull_request:
 
 name: Basic
 
