@@ -67,10 +67,10 @@ impl Module for Redeemable<'_> {
 
     fn execute(
         &mut self,
-        deps: &mut DepsMut,
-        env: Env,
-        info: MessageInfo,
-        msg: ExecuteMsg,
+        _deps: &mut DepsMut,
+        _env: Env,
+        _info: MessageInfo,
+        _msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
         unimplemented!("execute not implemented")
     }
