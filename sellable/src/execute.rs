@@ -176,8 +176,6 @@ where
 
         self.try_buy_token(deps, info, lowest_listed_token.clone().0)
     }
-
-
 }
 
 impl<'a, T, C, E, Q> RSellable<'a, T, C, E, Q>
