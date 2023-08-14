@@ -44,7 +44,7 @@ where
 
         for (token_id, price) in listings {
             if price.amount > Uint128::new(0) {
-                if self.listed_tokens.may_load(deps.storage, &token_id).is_ok() {
+                if self.listed_tokens.may_load(deps.storage, &token_id).unwrap().is_some() {
                     return Err(ContractError::TokenAlreadyListed);
                 } else if let Ok(Some(_)) = self
                     .tokens
@@ -176,8 +176,6 @@ where
 
         self.try_buy_token(deps, info, lowest_listed_token.clone().0)
     }
-
-
 }
 
 impl<'a, T, C, E, Q> RSellable<'a, T, C, E, Q>
