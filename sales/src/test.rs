@@ -115,9 +115,7 @@ mod tests {
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
             .expect("primary sales added");
-        let primary_sales = sales
-            .query(&deps.as_ref(), env.clone(), query_msg)
-            .unwrap();
+        let primary_sales = sales.query(&deps.as_ref(), env.clone(), query_msg).unwrap();
         let active_primary_sale = sales
             .query(&deps.as_ref(), env.clone(), QueryMsg::ActivePrimarySale {})
             .unwrap();
@@ -142,7 +140,7 @@ mod tests {
                     "extension": {}
                 }
         })
-            .to_string();
+        .to_string();
         let buyer_info = Rc::new(RefCell::new(mock_info(USER, &[Coin::new(20, "USDC")])));
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         sales
@@ -174,7 +172,7 @@ mod tests {
                 }]
             }
         })
-            .to_string();
+        .to_string();
         env.block.time = Timestamp::from_seconds(1676567587);
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         sales
@@ -184,7 +182,7 @@ mod tests {
         let json_exec_msg = json!({
             "halt_sale": { }
         })
-            .to_string();
+        .to_string();
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         sales
             .execute(&mut deps.as_mut(), env.clone(), info.clone(), execute_msg)
@@ -211,7 +209,7 @@ mod tests {
                 }]
             }
         })
-            .to_string();
+        .to_string();
         env.block.time = Timestamp::from_seconds(1678567587);
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         sales
@@ -235,7 +233,7 @@ mod tests {
                     "extension": {}
                 }
         })
-            .to_string();
+        .to_string();
         let buyer_info = Rc::new(RefCell::new(mock_info(USER, &[Coin::new(20, "USDC")])));
         let execute_msg: ExecuteMsg<Empty> = from_str(&json_exec_msg).unwrap();
         sales
