@@ -29,20 +29,11 @@ jobs:
             artifacts/
           key: ${{ runner.os }}-cargo-with-artifacts-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Set latest just version
-        run: echo "JUST_VERSION=$(cargo search just -q | sed -n -e '/^just[[:space:]]/p' | cut -d '"' -f 2)" >> $GITHUB_ENV
-
-      - name: Get cached just
-        uses: actions/cache@v3
+      - name: Run cargo clippy
+        uses: actions-rs/cargo@v1
         with:
-          path: ~/.cargo/bin/just
-          key: ${{ runner.os }}-just-${{ env.JUST_VERSION }}
-
-      - name: Install just
-        run: cargo install just || true
-
-      - name: run tests
-        run: just unit-test
+          toolchain: nightly
+          command: test
 
   lints:
     name: lint
