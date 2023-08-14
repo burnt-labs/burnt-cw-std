@@ -1,42 +1,13 @@
-name: unit test and lint
+# Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
-on: [push]
+on: [pull_request]
+
+name: Basic
 
 jobs:
+
   test:
-    name: unit test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install latest nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-          target: wasm32-unknown-unknown
-          override: true
-
-      - name: Rust Dependencies Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-            artifacts/
-          key: ${{ runner.os }}-cargo-with-artifacts-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          toolchain: nightly
-          command: test
-
-  lints:
-    name: lint
+    name: Test Suite
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -46,20 +17,49 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Run unit tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: unit-test
+          args: --locked
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Compile WASM contract
+        uses: actions-rs/cargo@v1
+        with:
+          command: wasm
+          args: --locked
+        env:
+          RUSTFLAGS: "-C link-arg=-s"
+
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
           override: true
           components: rustfmt, clippy
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
-          toolchain: nightly
           command: fmt
           args: --all -- --check
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
-          toolchain: nightly
           command: clippy
-          args: --all-targets -- -D warnings
+          args: -- -D warnings
