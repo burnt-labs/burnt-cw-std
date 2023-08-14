@@ -72,6 +72,8 @@ impl<'a> Ownable<'a> {
     }
 
     pub fn set_owner(&self, deps: &mut DepsMut, addr: &Addr) -> StdResult<()> {
+        // validate Addr before saving
+        deps.api.addr_validate(addr.as_str())?;
         self.owner.save(deps.storage, addr)
     }
 }
@@ -104,11 +106,14 @@ impl<'a> Module for Ownable<'a> {
     ) -> Result<Response, Self::Error> {
         match msg {
             ExecuteMsg::SetOwner(owner) => {
+                // validate Addr before saving
+                deps.api.addr_validate(owner.as_str())?;
+
                 let loaded_owner = self.owner.load(deps.storage).unwrap();
                 if info.sender != loaded_owner {
                     Err(Unauthorized {})
                 } else {
-                    self.owner.save(deps.storage, &owner).unwrap();
+                    self.set_owner(deps, &owner)?;
                     let resp = Response::new();
                     Ok(resp)
                 }

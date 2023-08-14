@@ -44,7 +44,9 @@ where
 
         for (token_id, price) in listings {
             if price.amount > Uint128::new(0) {
-                if let Ok(Some(_)) = self
+                if self.listed_tokens.may_load(deps.storage, &token_id).is_ok() {
+                    return Err(ContractError::TokenAlreadyListed);
+                } else if let Ok(Some(_)) = self
                     .tokens
                     .borrow()
                     .contract
@@ -54,8 +56,10 @@ where
                     self.listed_tokens
                         .save(deps.storage, token_id.as_str(), &price)?;
                 } else {
-                    return Err(ContractError::NoMetadataPresent);
+                    return Err(ContractError::TokenIDNotFoundError);
                 }
+            } else {
+                return Err(ContractError::InvalidListingPrice);
             }
         }
         Ok(Response::new().add_attribute("method", "list"))
@@ -78,7 +82,7 @@ where
             .contract
             .tokens
             .load(deps.storage, &token_id)
-            .map_err(|_| ContractError::NoMetadataPresent)?;
+            .map_err(|_| ContractError::TokenIDNotFoundError)?;
         if listed_token.owner.eq(&info.sender) {
             self.listed_tokens.remove(deps.storage, &token_id);
             Ok(Response::new().add_attribute("delist", token_id))
@@ -86,6 +90,32 @@ where
             Err(ContractError::Unauthorized)
         }
     }
+
+    pub fn try_buy(
+        &mut self,
+        deps: &mut DepsMut,
+        info: MessageInfo,
+    ) -> Result<Response, ContractError> {
+        let mut sorted_tokens = self
+            .listed_tokens
+            .range(deps.storage, None, None, Order::Descending)
+            .map(|t| t.unwrap())
+            .collect::<Vec<(String, Coin)>>();
+        if sorted_tokens.is_empty() {
+            return Err(ContractError::NoListedTokensError);
+        }
+        sorted_tokens.sort_by(|a, b| {
+            if a.1.amount == b.1.amount {
+                a.1.denom.cmp(&b.1.denom)
+            } else {
+                a.1.amount.cmp(&b.1.amount)
+            }
+        });
+        let lowest_listed_token = sorted_tokens.get(0).unwrap();
+
+        self.try_buy_token(deps, info, lowest_listed_token.clone().0)
+    }
+
     pub fn try_buy_token(
         &mut self,
         deps: &mut DepsMut,
@@ -159,7 +189,7 @@ where
         if let Some(denom) = self.tokens.borrow().name.clone() {
             denom_name = denom;
         } else {
-            return Err(ContractError::NoFundsPresent);
+            return Err(ContractError::NoTokensDefined);
         }
         let contract = &self.tokens.borrow_mut().contract;
         let maybe_coin = info.funds.iter().find(|&coin| coin.denom.eq(&denom_name));
@@ -268,7 +298,9 @@ where
 
         check_ownable(&deps.as_ref(), &env, &info, ownable)?;
         for (token_id, price) in &listings {
-            if price.amount > Uint128::new(0) {
+            if self.listed_tokens.may_load(deps.storage, &token_id).is_ok() {
+                return Err(ContractError::TokenAlreadyListed);
+            } else if price.amount > Uint128::new(0) {
                 if self
                     .tokens
                     .borrow()
@@ -282,8 +314,10 @@ where
                     self.listed_tokens
                         .save(deps.storage, token_id.as_str(), price)?;
                 } else {
-                    return Err(ContractError::NoMetadataPresent);
+                    return Err(ContractError::TokenIDNotFoundError);
                 }
+            } else {
+                return Err(ContractError::InvalidListingPrice);
             }
         }
         Ok(Response::new().add_attribute("list", json!(listings).to_string()))
@@ -306,7 +340,7 @@ where
             .contract
             .tokens
             .load(deps.storage, &token_id)
-            .map_err(|_| ContractError::NoMetadataPresent)?;
+            .map_err(|_| ContractError::TokenIDNotFoundError)?;
         if listed_token.owner.eq(&info.sender) {
             self.listed_tokens.remove(deps.storage, &token_id);
             Ok(Response::new().add_attribute("delist", token_id))
@@ -379,95 +413,28 @@ where
 
     pub fn try_buy(
         &mut self,
-        deps: DepsMut,
+        deps: &mut DepsMut,
         env: &Env,
         info: MessageInfo,
     ) -> Result<Response, ContractError> {
-        let denom_name: String;
-        if let Some(denom) = self.tokens.borrow().name.clone() {
-            denom_name = denom;
-        } else {
-            return Err(ContractError::NoFundsPresent);
+        let mut sorted_tokens = self
+            .listed_tokens
+            .range(deps.storage, None, None, Order::Descending)
+            .map(|t| t.unwrap())
+            .collect::<Vec<(String, Coin)>>();
+        if sorted_tokens.is_empty() {
+            return Err(ContractError::NoListedTokensError);
         }
-        let contract = &self.tokens.borrow_mut().contract;
-        let redeemable = &self.redeemable.borrow();
-
-        let maybe_coin = info.funds.iter().find(|&coin| coin.denom.eq(&denom_name));
-
-        if let Some(coin) = maybe_coin {
-            let limit = coin.amount;
-
-            let mut sorted_tokens = self
-                .listed_tokens
-                .range(deps.storage, None, None, Order::Descending)
-                .map(|t| t.unwrap())
-                .collect::<Vec<(String, Coin)>>();
-            sorted_tokens.sort_unstable_by_key(|t| t.1.amount);
-            if sorted_tokens.is_empty() {
-                return Err(ContractError::NoListedTokensError);
+        sorted_tokens.sort_by(|a, b| {
+            if a.1.amount == b.1.amount {
+                a.1.denom.cmp(&b.1.denom)
+            } else {
+                a.1.amount.cmp(&b.1.amount)
             }
-            let lowest_listed_token = sorted_tokens.get(0).unwrap();
+        });
+        let lowest_listed_token = sorted_tokens.get(0).unwrap();
 
-            check_redeemable(
-                &deps.as_ref(),
-                env,
-                &info,
-                &lowest_listed_token.0,
-                redeemable,
-            )?;
-            let token_info = contract
-                .tokens
-                .load(deps.storage, lowest_listed_token.0.as_str())?;
-            let lowest = Ok((
-                lowest_listed_token.clone().0,
-                token_info.owner,
-                lowest_listed_token.1.amount,
-            ));
-
-            lowest
-                .and_then(|l @ (_, _, lowest_price)| {
-                    if lowest_price <= limit {
-                        Ok(l)
-                    } else {
-                        Err(ContractError::LimitBelowLowestOffer {
-                            limit,
-                            lowest_price,
-                        })
-                    }
-                })
-                .and_then(|(lowest_token_id, lowest_token_owner, lowest_price)| {
-                    contract.tokens.update::<_, ContractError>(
-                        deps.storage,
-                        lowest_token_id.as_str(),
-                        |old| {
-                            let mut token_info = old.unwrap();
-                            token_info.owner = info.sender.clone();
-                            Ok(token_info)
-                        },
-                    )?;
-                    self.listed_tokens
-                        .remove(deps.storage, lowest_token_id.as_str());
-
-                    let payment_coin = Coin::new(lowest_price.into(), &denom_name);
-                    let delta = limit - lowest_price;
-                    let mut messages = vec![BankMsg::Send {
-                        to_address: lowest_token_owner.to_string(),
-                        amount: vec![payment_coin],
-                    }];
-                    if delta > Uint128::new(0) {
-                        messages.push(BankMsg::Send {
-                            to_address: info.sender.to_string(),
-                            amount: vec![Coin::new(delta.into(), &denom_name)],
-                        })
-                    }
-
-                    Ok(Response::new()
-                        .add_attribute("method", "buy")
-                        .add_messages(messages))
-                })
-        } else {
-            Err(ContractError::NoFundsPresent)
-        }
+        self.try_buy_token(deps, env, info, lowest_listed_token.clone().0)
     }
 }
 
@@ -488,8 +455,8 @@ fn check_ownable(
     info: &MessageInfo,
     ownable: &Ownable,
 ) -> Result<(), ContractError> {
-    if ownable.is_owner(deps, &info.sender)? {
-        return Ok(());
+    if !ownable.is_owner(deps, &info.sender)? {
+        return Err(ContractError::Unauthorized);
     }
     Ok(())
 }

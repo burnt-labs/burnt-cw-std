@@ -1,10 +1,11 @@
 use std::{cell::RefCell, rc::Rc};
 
 use burnt_glue::response::Response;
-use cosmwasm_std::{BankMsg, Coin, CosmosMsg, CustomMsg, Deps, DepsMut, Env, MessageInfo, Uint64};
+use cosmwasm_std::{
+    BankMsg, Coin, CosmosMsg, CustomMsg, DepsMut, Env, MessageInfo, Timestamp, Uint64,
+};
 use cw721_base::{state::TokenInfo, MintMsg};
 use cw_storage_plus::Item;
-use ownable::Ownable;
 use sellable::Sellable;
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -27,27 +28,47 @@ where
         }
     }
 
-    pub fn add_primary_sales(
+    pub fn add_primary_sale(
         &mut self,
         msg: CreatePrimarySale,
         deps: &mut DepsMut,
         env: Env,
         info: &MessageInfo,
     ) -> Result<Response, ContractError> {
-        // basic validation on CreatePrimarySale struct
+        // can not add a sale that starts in the past
         if msg.start_time.lt(&Uint64::from(env.block.time.seconds())) {
             return Err(ContractError::InvalidPrimarySaleParamError(
                 "start time".to_string(),
             ));
+        } else if !msg.end_time.gt(&msg.start_time) {
+            // cannot add a sale that ends before it starts
+            return Err(ContractError::InvalidPrimarySaleParamError(
+                "end time".to_string(),
+            ));
         }
-        let ownable = &self.sellable.borrow().ownable;
-        assert_owner(&deps.as_ref(), &env, info, &ownable.borrow())?;
+
+        // validate contract owner
+        if info.sender
+            != self
+                .sellable
+                .borrow()
+                .ownable
+                .borrow()
+                .owner
+                .load(deps.storage)?
+        {
+            return Err(ContractError::Unauthorized);
+        }
+
         // make sure no active primary sale
+        let start_time = Timestamp::from_seconds(msg.start_time.u64());
+        let end_time = Timestamp::from_seconds(msg.end_time.u64());
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap_or(vec![]);
         for sale in &primary_sales {
-            if msg.start_time.le(&Uint64::from(sale.end_time.seconds())) {
+            // can't add a sale that overlaps with the start or end of another sale
+            if check_events_overlap(start_time, end_time, sale.start_time, sale.end_time) {
                 return Err(ContractError::InvalidPrimarySaleParamError(
-                    "start time".to_string(),
+                    "overlap".to_string(),
                 ));
             }
         }
@@ -56,13 +77,28 @@ where
         Ok(Response::default())
     }
 
-    pub fn halt_sale(&mut self, deps: &mut DepsMut, env: Env) -> Result<Response, ContractError> {
+    pub fn halt_sale(
+        &mut self,
+        deps: &mut DepsMut,
+        env: Env,
+        info: MessageInfo,
+    ) -> Result<Response, ContractError> {
+        if info.sender
+            != self
+                .sellable
+                .borrow()
+                .ownable
+                .borrow()
+                .owner
+                .load(deps.storage)?
+        {
+            return Err(ContractError::Unauthorized);
+        }
+
         let mut primary_sales = self.primary_sales.load(deps.storage)?;
 
         for sale in primary_sales.iter_mut() {
-            if (!sale.disabled && sale.end_time.gt(&env.block.time))
-                || sale.end_time.gt(&env.block.time)
-            {
+            if !sale.disabled && sale.end_time.gt(&env.block.time) {
                 sale.disabled = true;
                 self.primary_sales.save(deps.storage, &primary_sales)?;
                 return Ok(Response::default());
@@ -82,35 +118,34 @@ where
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
 
         for sale in primary_sales.iter_mut() {
-            if !sale.disabled && sale.end_time.gt(&env.block.time) && (sale.tokens_minted.lt(&sale.total_supply) || sale.total_supply.eq(&Uint64::from(0_u8))) {
+            if !sale.disabled // if the sale is not disabled
+                && sale.end_time.gt(&env.block.time) // and the sale has not ended
+                && (sale.tokens_minted.lt(&sale.total_supply) // and tokens haven't hit their supply cap
+                    || sale.total_supply.eq(&Uint64::from(0_u8)))
+            // or the supply cap is 0 (unlimited)
+            {
                 // check if enough fee was sent
-                let ownable = &self.sellable.borrow().ownable;
-                let paying_fund: &Coin;
-                if info.funds.len() > 1 {
+                if info.funds.len() == 0 {
+                    return Err(ContractError::NoFundsError);
+                } else if info.funds.len() > 1 {
                     return Err(ContractError::MultipleFundsError);
-                } else if sale.price.contains(&info.funds[0]) {
-                    return Err(ContractError::WrongFundError);
                 } else {
-                    paying_fund = sale
-                        .price
-                        .iter()
-                        .find(|coin| coin.denom == info.funds[0].denom)
-                        .unwrap();
-                    if paying_fund.amount.gt(&info.funds[0].amount) {
+                    if info.funds[0].denom.ne(&sale.price[0].denom) {
+                        return Err(ContractError::WrongFundError);
+                    }
+                    if info.funds[0].amount.lt(&info.funds[0].amount) {
                         return Err(ContractError::InsufficientFundsError);
                     }
                 }
                 // mint the item
                 let mut response = self.mint(deps, env, &info, mint_msg).unwrap();
-                sale.tokens_minted = sale
-                    .tokens_minted
-                    .checked_add(Uint64::from(1_u8))
-                    .unwrap();
+                sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
                 }
                 // send funds to creator
+                let ownable = &self.sellable.borrow().ownable;
                 let message = BankMsg::Send {
                     to_address: ownable
                         .borrow()
@@ -118,25 +153,22 @@ where
                         .unwrap()
                         .to_string(),
                     amount: vec![Coin::new(
-                        paying_fund.amount.u128(),
-                        paying_fund.denom.clone(),
+                        sale.price[0].amount.u128(),
+                        sale.price[0].denom.clone(),
                     )],
                 };
                 let cosmos_msg = CosmosMsg::Bank(message);
                 response = response.add_message(cosmos_msg);
 
-                if paying_fund.amount.lt(&info.funds[0].amount) {
+                if sale.price[0].amount.lt(&info.funds[0].amount) {
                     // refund user back extra funds
                     let refund_amount = info.funds[0]
                         .amount
-                        .checked_sub(paying_fund.amount)
+                        .checked_sub(sale.price[0].amount)
                         .unwrap();
                     let refund_message = BankMsg::Send {
                         to_address: info.sender.to_string(),
-                        amount: vec![Coin::new(
-                            refund_amount.u128(),
-                            paying_fund.denom.clone(),
-                        )],
+                        amount: vec![Coin::new(refund_amount.u128(), sale.price[0].denom.clone())],
                     };
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
@@ -191,14 +223,31 @@ where
     }
 }
 
-fn assert_owner(
-    deps: &Deps,
-    _env: &Env,
-    info: &MessageInfo,
-    ownable: &Ownable,
-) -> Result<(), ContractError> {
-    if ownable.is_owner(deps, &info.sender)? {
-        return Ok(());
+fn check_events_overlap(
+    a_start: Timestamp,
+    a_end: Timestamp,
+    b_start: Timestamp,
+    b_end: Timestamp,
+) -> bool {
+    // first event starts during second event
+    if a_start.ge(&b_start) && a_start.le(&b_end) {
+        return true;
     }
-    Err(ContractError::Unauthorized)
+
+    // first event ends during second event
+    if a_end.ge(&b_start) && a_end.le(&b_end) {
+        return true;
+    }
+
+    // second event starts during first event
+    if b_start.ge(&a_start) && b_start.le(&a_end) {
+        return true;
+    }
+
+    // second event ends during first event
+    if b_end.ge(&a_start) && b_end.le(&a_end) {
+        return true;
+    }
+
+    false
 }

@@ -18,6 +18,12 @@ pub enum ContractError {
     #[error("Missing required metadata")]
     NoMetadataPresent,
 
+    #[error("Token already listed")]
+    TokenAlreadyListed,
+
+    #[error("Invalid listing price")]
+    InvalidListingPrice,
+
     #[error("No tokens listed for sale")]
     NoListedTokensError,
 
@@ -33,11 +39,17 @@ pub enum ContractError {
     #[error("No relevant funds present in transaction")]
     NoFundsPresent,
 
+    #[error("No tokens configured for the sale")]
+    NoTokensDefined,
+
     #[error("Multiple funds present")]
     MultipleFundsError,
 
     #[error("Wrong fund in transaction")]
     WrongFundError,
+
+    #[error("Token ID not found")]
+    TokenIDNotFoundError,
 
     #[error("{0}")]
     BaseError(#[from] cw721_base::ContractError),
