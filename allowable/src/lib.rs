@@ -65,8 +65,11 @@ impl<'a> Allowable<'a> {
 
     pub fn is_allowed(&self, deps: &Deps, addr: Addr) -> StdResult<bool> {
         match self.enabled.may_load(deps.storage).unwrap() {
-            Some(val) => Ok(val),
-            None => Ok(self.allowed_addrs.has(deps.storage, addr)),
+            Some(true) => Ok(self.allowed_addrs.has(deps.storage, addr)),
+            // if allowable is not enabled, then we allow all addresses
+            Some(false) => Ok(true),
+            // gracefully handle the case where the enabled flag is not set
+            None => Ok(false),
         }
     }
 }
