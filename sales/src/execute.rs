@@ -129,6 +129,7 @@ where
     ) -> Result<Response, ContractError> {
         // get current active sale
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
+        let mut buy_item_event = Event::new("sales-token_minted");
 
         for sale in primary_sales.iter_mut() {
             if !sale.disabled // if the sale is not disabled
@@ -151,16 +152,20 @@ where
                     }
                 }
                 // mint the item
-                let mut response = self.mint(deps, env.clone(), &info, mint_msg).unwrap();
+                let mut response = self.mint(deps, env.clone(), &info, mint_msg.clone()).unwrap();
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
+                buy_item_event = buy_item_event.add_attributes(vec![
+                    ("contract_address", env.contract.address.to_string()),
+                    ("mintedBy", env.contract.address.to_string()),
+                    ("mintedFor", info.sender.to_string()),
+                    ("token_metadata", serde_json::to_string(&mint_msg).unwrap()),
+                ]);
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
-                    response =
-                        response.add_event(Event::new("sales-sale_ended").add_attributes(vec![
-                            ("contract_address", env.contract.address.to_string()),
-                            ("sale_object", serde_json::to_string(&sale).unwrap()),
-                        ]));
+                    buy_item_event = buy_item_event.add_attributes(vec![
+                            ("sales_ended", serde_json::to_string(&sale).unwrap()),
+                        ]);
                 }
                 // send funds to creator
                 let ownable = &self.sellable.borrow().ownable;
@@ -177,11 +182,10 @@ where
                 };
                 let cosmos_msg = CosmosMsg::Bank(message);
                 response = response.add_message(cosmos_msg);
-                response = response.add_event(Event::new("sales-funds_sent").add_attributes(vec![
-                    ("contract_address", env.contract.address.to_string()),
-                    ("to", ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string()),
-                    ("amount", serde_json::to_string(&sale.price[0]).unwrap())
-                ]));
+                buy_item_event = buy_item_event.add_attributes(vec![
+                    ("funds_to", ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string()),
+                    ("funds_amount", serde_json::to_string(&sale.price[0]).unwrap())
+                ]);
 
                 if sale.price[0].amount.lt(&info.funds[0].amount) {
                     // refund user back extra funds
@@ -195,22 +199,20 @@ where
                     };
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
-                    response = response.add_event(
-                        Event::new("sales-refund_sent").add_attributes(vec![
-                            ("contract_address", env.contract.address.to_string()),
-                            ("to", info.sender.to_string()),
+                    buy_item_event = buy_item_event.add_attributes(vec![
+                            ("refund_to", info.sender.to_string()),
                             (
-                                "amount",
+                                "refund_amount",
                                 serde_json::to_string(&Coin {
                                     amount: refund_amount,
                                     denom: sale.price[0].denom.clone(),
                                 })
                                 .unwrap(),
                             ),
-                        ]),
-                    );
+                        ]);
                 }
                 self.primary_sales.save(deps.storage, &primary_sales)?;
+                response = response.add_event(buy_item_event);
                 return Ok(response);
             }
         }
@@ -220,8 +222,8 @@ where
     pub fn mint(
         &self,
         deps: &mut DepsMut,
-        env: Env,
-        info: &MessageInfo,
+        _env: Env,
+        _info: &MessageInfo,
         msg: MintMsg<T>,
     ) -> Result<Response, ContractError> {
         // create the token
@@ -253,12 +255,7 @@ where
             .increment_tokens(deps.storage)?;
 
         Ok(
-            Response::new().add_event(Event::new("sales-token_minted").add_attributes(vec![
-                ("contract_address", env.contract.address.to_string()),
-                ("by", env.contract.address.to_string()),
-                ("for", info.sender.to_string()),
-                ("token_metadata", serde_json::to_string(&msg).unwrap()),
-            ])),
+            Response::default()
         )
     }
 }
