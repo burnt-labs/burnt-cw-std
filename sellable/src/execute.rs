@@ -19,13 +19,11 @@ where
 {
     pub fn new(
         tokens_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
-        allowable_module: Rc<RefCell<Allowable<'a>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
     ) -> Self {
         Self {
             tokens: tokens_module,
-            allowable: allowable_module,
             ownable: ownable_module,
             listed_tokens,
         }
@@ -76,14 +74,12 @@ where
 {
     pub fn new(
         token_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
-        allowable_module: Rc<RefCell<Allowable<'a>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
         redeemable_module: Rc<RefCell<Redeemable<'a>>>,
     ) -> Self {
         Self {
             tokens: token_module,
-            allowable: allowable_module,
             ownable: ownable_module,
             listed_tokens,
             redeemable: redeemable_module,
