@@ -147,7 +147,7 @@ where
                     if info.funds[0].denom.ne(&sale.price[0].denom) {
                         return Err(ContractError::WrongFundError);
                     }
-                    if info.funds[0].amount.lt(&info.funds[0].amount) {
+                    if info.funds[0].amount.lt(&sale.price[0].amount) {
                         return Err(ContractError::InsufficientFundsError);
                     }
                 }
