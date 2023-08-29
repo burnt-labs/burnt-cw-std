@@ -11,12 +11,10 @@ use state::LISTED_TOKENS;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use allowable::Allowable;
 use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use ownable::Ownable;
-use redeemable::Redeemable;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use token::Tokens;
@@ -46,7 +44,6 @@ where
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
     pub listed_tokens: Map<'a, &'a str, Coin>,
-    pub redeemable: Rc<RefCell<Redeemable<'a>>>,
 }
 
 impl<'a, T, C, E, Q> Default for Sellable<'a, T, C, E, Q>
@@ -77,7 +74,6 @@ where
             tokens: Rc::new(RefCell::new(Tokens::default())),
             ownable: Rc::new(RefCell::new(Ownable::default())),
             listed_tokens: LISTED_TOKENS,
-            redeemable: Rc::new(RefCell::new(Redeemable::default())),
         }
     }
 }

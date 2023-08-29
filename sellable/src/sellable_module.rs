@@ -33,14 +33,9 @@ where
         redeemable: &Redeemable,
     ) -> Result<(), ContractError>;
 
-    fn check_is_allowed(&self, deps: &Deps, info: &MessageInfo) -> Result<(), ContractError>;
-
     fn get_token_module(&self) -> Rc<RefCell<Tokens<'a, T, C, E, Q>>>;
 
     fn get_ownable_module(&self) -> Rc<RefCell<Ownable<'a>>>;
-
-    // Some modules may not have redeemable module
-    fn get_redeemable_module(&self) -> Option<Rc<RefCell<Redeemable<'a>>>>;
 
     fn get_listed_tokens(&self) -> Map<'a, &'a str, Coin>;
 }
@@ -77,24 +72,12 @@ where
         Ok(())
     }
 
-    fn check_is_allowed(&self, deps: &Deps, info: &MessageInfo) -> Result<(), ContractError> {
-        let allowable = &self.allowable.borrow();
-        if !allowable.is_allowed(deps, info.sender.clone())? {
-            return Err(ContractError::Unauthorized);
-        }
-        Ok(())
-    }
-
     fn get_token_module(&self) -> Rc<RefCell<Tokens<'a, T, C, E, Q>>> {
         self.tokens.clone()
     }
 
     fn get_ownable_module(&self) -> Rc<RefCell<Ownable<'a>>> {
         self.ownable.clone()
-    }
-
-    fn get_redeemable_module(&self) -> Option<Rc<RefCell<Redeemable<'a>>>> {
-        None
     }
 
     fn get_listed_tokens(&self) -> Map<'a, &'a str, Coin> {
@@ -138,24 +121,12 @@ where
         Ok(())
     }
 
-    fn check_is_allowed(&self, deps: &Deps, info: &MessageInfo) -> Result<(), ContractError> {
-        let allowable = &self.allowable.borrow();
-        if !allowable.is_allowed(deps, info.sender.clone())? {
-            return Err(ContractError::Unauthorized);
-        }
-        Ok(())
-    }
-
     fn get_token_module(&self) -> Rc<RefCell<Tokens<'a, T, C, E, Q>>> {
         self.tokens.clone()
     }
 
     fn get_ownable_module(&self) -> Rc<RefCell<Ownable<'a>>> {
         self.ownable.clone()
-    }
-
-    fn get_redeemable_module(&self) -> Option<Rc<RefCell<Redeemable<'a>>>> {
-        Some(self.redeemable.clone())
     }
 
     fn get_listed_tokens(&self) -> Map<'a, &'a str, Coin> {

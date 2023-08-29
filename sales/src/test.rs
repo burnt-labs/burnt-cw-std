@@ -2,7 +2,6 @@
 mod tests {
     use std::{cell::RefCell, rc::Rc};
 
-    use allowable::Allowable;
     use burnt_glue::module::Module;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, mock_info},

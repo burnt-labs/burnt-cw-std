@@ -1,12 +1,10 @@
 use std::{cell::RefCell, ops::Sub, rc::Rc};
 
 use crate::{errors::ContractError, sellable_module::SellableModule, RSellable, Sellable};
-use allowable::Allowable;
 use burnt_glue::response::Response;
 use cosmwasm_std::{BankMsg, Coin, CustomMsg, DepsMut, Env, Event, MessageInfo, Order, Uint128};
 use cw_storage_plus::Map;
 use ownable::Ownable;
-use redeemable::Redeemable;
 use serde::{de::DeserializeOwned, Serialize};
 use token::Tokens;
 
@@ -76,13 +74,11 @@ where
         token_module: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
         ownable_module: Rc<RefCell<Ownable<'a>>>,
         listed_tokens: Map<'a, &'a str, Coin>,
-        redeemable_module: Rc<RefCell<Redeemable<'a>>>,
     ) -> Self {
         Self {
             tokens: token_module,
             ownable: ownable_module,
             listed_tokens,
-            redeemable: redeemable_module,
         }
     }
 
@@ -136,7 +132,6 @@ where
     C: CustomMsg,
 {
     let ownable = sellable_module.get_ownable_module();
-    let redeemable = sellable_module.get_redeemable_module();
     let listed_tokens = sellable_module.get_listed_tokens();
     let tokens = sellable_module.get_token_module();
 
@@ -159,15 +154,6 @@ where
             {
                 if token_info.owner.ne(&info.sender) {
                     return Err(ContractError::Unauthorized);
-                }
-                if let Some(redeemable_module) = &redeemable {
-                    sellable_module.check_redeemable(
-                        &deps.as_ref(),
-                        &env,
-                        &info,
-                        token_id,
-                        &redeemable_module.borrow(),
-                    )?;
                 }
                 listed_tokens.save(deps.storage, token_id.as_str(), price)?;
             } else {
@@ -271,8 +257,6 @@ where
     E: CustomMsg,
     C: CustomMsg,
 {
-    sellable_module.check_is_allowed(&deps.as_ref(), &info)?;
-    let redeemable = sellable_module.get_redeemable_module();
     let listed_tokens = sellable_module.get_listed_tokens();
     let tokens = sellable_module.get_token_module();
 
@@ -284,15 +268,6 @@ where
                 if fund.denom.ne(&price.denom) {
                     Err(ContractError::WrongFundError)
                 } else if fund.amount.ge(&price.amount) {
-                    if let Some(redeemable_module) = &redeemable {
-                        sellable_module.check_redeemable(
-                            &deps.as_ref(),
-                            env,
-                            &info,
-                            &token_id,
-                            &redeemable_module.borrow(),
-                        )?;
-                    }
                     let token_metadata = tokens
                         .borrow()
                         .contract

@@ -51,30 +51,6 @@ mod tests {
             .unwrap();
 
         sellable
-            .allowable
-            .borrow_mut()
-            .set_enabled(deps, true)
-            .unwrap();
-
-        sellable
-    }
-
-    #[test]
-    fn allowable_sellable() {
-        let mut deps = mock_dependencies();
-        let env = mock_env();
-        let info = mock_info(CREATOR, &[]);
-
-        let sellable = setup_sellable_module(&mut deps.as_mut(), &env, &info);
-
-        let allowable = &sellable.allowable.borrow();
-        allowable.set_enabled(&mut deps.as_mut(), true).unwrap();
-
-        let allowed = allowable
-            .is_allowed(&deps.as_ref(), Addr::unchecked(BUYER))
-            .unwrap();
-
-        assert!(allowed);
     }
 
     #[test]
