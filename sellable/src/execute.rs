@@ -154,14 +154,16 @@ where
         {
             return Err(ContractError::TokenAlreadyListed);
         } else if price.amount > Uint128::new(0) {
-            if tokens
+            if let Some(token_info) = tokens
                 .borrow()
                 .contract
                 .tokens
                 .may_load(deps.storage, token_id)
                 .unwrap()
-                .is_some()
             {
+                if token_info.owner.ne(&info.sender) {
+                    return Err(ContractError::Unauthorized);
+                }
                 if let Some(redeemable_module) = &redeemable {
                     sellable_module.check_redeemable(
                         &deps.as_ref(),
@@ -171,7 +173,6 @@ where
                         &redeemable_module.borrow(),
                     )?;
                 }
-
                 listed_tokens.save(deps.storage, token_id.as_str(), price)?;
             } else {
                 return Err(ContractError::TokenIDNotFoundError);
@@ -337,8 +338,8 @@ where
                             to_address: info.sender.to_string(),
                             amount: vec![Coin::new(delta.u128(), &price.denom)],
                         });
-                        resp = resp.add_event(
-                            Event::new("sellable-refund_sent").add_attributes(vec![
+                        resp = resp.add_event(Event::new("sellable-refund_sent").add_attributes(
+                            vec![
                                 ("to", info.sender.as_str()),
                                 ("contract_address", env.contract.address.as_str()),
                                 (
@@ -350,8 +351,8 @@ where
                                     .unwrap()
                                     .as_str(),
                                 ),
-                            ]),
-                        );
+                            ],
+                        ));
                     }
                     resp = resp.add_messages(messages);
                     return Ok(resp);

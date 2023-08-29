@@ -93,9 +93,8 @@ impl<'a> Module for Ownable<'a> {
         _: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         self.owner.save(deps.storage, &info.sender)?;
-        let resp = Response::new()
-            .add_event(Event::new("ownable-instantiate")
-            .add_attributes(vec![
+        let resp =
+            Response::new().add_event(Event::new("ownable-instantiate").add_attributes(vec![
                 ("contract_address", env.contract.address.to_string()),
                 ("owner", info.sender.to_string()),
             ]));

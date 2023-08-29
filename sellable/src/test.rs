@@ -84,7 +84,7 @@ mod tests {
             .is_allowed(&deps.as_ref(), Addr::unchecked(BUYER))
             .unwrap();
 
-        assert_eq!(allowed, true);
+        assert!(allowed);
     }
 
     #[test]
@@ -121,6 +121,19 @@ mod tests {
                 denom: "uturnt".to_string(),
             },
         )]);
+        // List a minted token with wrong owner
+        let list_result = sellable
+            .try_list(
+                &mut deps.as_mut(),
+                env.clone(),
+                mock_info(BUYER, &[]),
+                listings.clone(),
+            )
+            .expect_err("Should not be able to list token with wrong owner");
+        match list_result {
+            ContractError::Unauthorized => {}
+            _ => panic!(),
+        }
         let res = sellable
             .try_list(
                 &mut deps.as_mut(),

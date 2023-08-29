@@ -121,21 +121,21 @@ mod tests {
         let allowed = allowable
             .is_allowed(&deps.as_ref(), addrs[0].clone())
             .unwrap();
-        assert_eq!(allowed, false);
+        assert!(!allowed);
 
         // Clear all addresses
         allowable.clear_addrs(&mut deps.as_mut()).unwrap();
         let allowed = allowable
             .is_allowed(&deps.as_ref(), addrs[1].clone())
             .unwrap();
-        assert_eq!(allowed, false);
+        assert!(!allowed);
 
         // If disabled, everyone is allowed.
         allowable.set_enabled(&mut deps.as_mut(), false).unwrap();
         let allowed = allowable
             .is_allowed(&deps.as_ref(), addrs[0].clone())
             .unwrap();
-        assert_eq!(allowed, true);
+        assert!(allowed);
     }
 
     // Test execute method of allowable contract

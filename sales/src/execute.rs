@@ -152,7 +152,9 @@ where
                     }
                 }
                 // mint the item
-                let mut response = self.mint(deps, env.clone(), &info, mint_msg.clone()).unwrap();
+                let mut response = self
+                    .mint(deps, env.clone(), &info, mint_msg.clone())
+                    .unwrap();
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
                 buy_item_event = buy_item_event.add_attributes(vec![
                     ("contract_address", env.contract.address.to_string()),
@@ -163,9 +165,10 @@ where
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
-                    buy_item_event = buy_item_event.add_attributes(vec![
-                            ("sales_ended", serde_json::to_string(&sale).unwrap()),
-                        ]);
+                    buy_item_event = buy_item_event.add_attributes(vec![(
+                        "sales_ended",
+                        serde_json::to_string(&sale).unwrap(),
+                    )]);
                 }
                 // send funds to creator
                 let ownable = &self.sellable.borrow().ownable;
@@ -183,8 +186,18 @@ where
                 let cosmos_msg = CosmosMsg::Bank(message);
                 response = response.add_message(cosmos_msg);
                 buy_item_event = buy_item_event.add_attributes(vec![
-                    ("funds_to", ownable.borrow().get_owner(&deps.as_ref()).unwrap().to_string()),
-                    ("funds_amount", serde_json::to_string(&sale.price[0]).unwrap())
+                    (
+                        "funds_to",
+                        ownable
+                            .borrow()
+                            .get_owner(&deps.as_ref())
+                            .unwrap()
+                            .to_string(),
+                    ),
+                    (
+                        "funds_amount",
+                        serde_json::to_string(&sale.price[0]).unwrap(),
+                    ),
                 ]);
 
                 if sale.price[0].amount.lt(&info.funds[0].amount) {
@@ -200,16 +213,16 @@ where
                     let refund_cosmos_msg = CosmosMsg::Bank(refund_message);
                     response = response.add_message(refund_cosmos_msg);
                     buy_item_event = buy_item_event.add_attributes(vec![
-                            ("refund_to", info.sender.to_string()),
-                            (
-                                "refund_amount",
-                                serde_json::to_string(&Coin {
-                                    amount: refund_amount,
-                                    denom: sale.price[0].denom.clone(),
-                                })
-                                .unwrap(),
-                            ),
-                        ]);
+                        ("refund_to", info.sender.to_string()),
+                        (
+                            "refund_amount",
+                            serde_json::to_string(&Coin {
+                                amount: refund_amount,
+                                denom: sale.price[0].denom.clone(),
+                            })
+                            .unwrap(),
+                        ),
+                    ]);
                 }
                 self.primary_sales.save(deps.storage, &primary_sales)?;
                 response = response.add_event(buy_item_event);
@@ -254,9 +267,7 @@ where
             .contract
             .increment_tokens(deps.storage)?;
 
-        Ok(
-            Response::default()
-        )
+        Ok(Response::default())
     }
 }
 
