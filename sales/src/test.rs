@@ -175,54 +175,33 @@ mod tests {
         }
         // make sure sale buy event is emitted
         let events = res.response.events;
-        // there should be 4 events: sales-token_minted, sales-funds_sent, sales-refund_sent, sales-sale_ended
-        // the last event sales-sale_ended is not emitted because the sale is not ended
-        assert_eq!(events.len(), 4);
+        // there should be 1 event1: sales-token_minted with attributes: minted_by, minted_for, sales_ended
+        // the last attribute sales-sale_ended is not emitted because the sale is not ended
+        assert_eq!(events.len(), 1);
         assert_eq!(events[0].ty, "sales-token_minted");
+        let mut p_sale = PrimarySale::from(primary_sale);
+        p_sale.tokens_minted = Uint64::from(1_u64);
+        p_sale.disabled = true;
         assert_eq!(
             events[0].attributes,
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("by", env.contract.address.to_string()),
-                Attribute::new("for", buyer_info.borrow().sender.to_string()),
+                Attribute::new("minted_by", env.contract.address.to_string()),
+                Attribute::new("minted_for", buyer_info.borrow().sender.to_string()),
                 Attribute::new("token_metadata", serde_json::to_string(&mint_msg).unwrap()),
-            ]
-        );
-        assert_eq!(events[1].ty, "sales-sale_ended");
-        let mut primary_sale = PrimarySale::from(primary_sale);
-        primary_sale.tokens_minted = Uint64::from(1_u64);
-        primary_sale.disabled = true;
-        assert_eq!(
-            events[1].attributes,
-            vec![
-                Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("sale_object", serde_json::to_string(&primary_sale).unwrap()),
-            ]
-        );
-        assert_eq!(events[2].ty, "sales-funds_sent");
-        assert_eq!(
-            events[2].attributes,
-            vec![
-                Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("to", CREATOR.to_string()),
+                Attribute::new("sales_ended", serde_json::to_string(&p_sale).unwrap()),
+                Attribute::new("funds_to", CREATOR.to_string()),
                 Attribute::new(
-                    "amount",
+                    "funds_amount",
                     serde_json::to_string(&Coin {
                         amount: Uint128::from(10_u64),
                         denom: "USDC".to_string()
                     })
                     .unwrap()
                 ),
-            ]
-        );
-        assert_eq!(events[3].ty, "sales-refund_sent");
-        assert_eq!(
-            events[3].attributes,
-            vec![
-                Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("to", buyer_info.borrow().sender.to_string()),
+                Attribute::new("refund_to", buyer_info.borrow().sender.to_string()),
                 Attribute::new(
-                    "amount",
+                    "refund_amount",
                     serde_json::to_string(&Coin {
                         amount: Uint128::from(10_u64),
                         denom: "USDC".to_string()
@@ -342,43 +321,29 @@ mod tests {
         }
         // make sure sale buy event is emitted
         let events = res.response.events;
-        // there should be 3 events: sales-token_minted, sales-funds_sent, sales-refund_sent
-        // the last event sales-sale_ended is not emitted because the sale is not ended
-        assert_eq!(events.len(), 3);
+        // there should be 1 event: sales-token_minted with attributes, minted_by, minted_for, sales_ended
+        // the last attribute sales_ended is not emitted because the sale is not ended
+        assert_eq!(events.len(), 1);
         assert_eq!(events[0].ty, "sales-token_minted");
         assert_eq!(
             events[0].attributes,
             vec![
                 Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("by", env.contract.address.to_string()),
-                Attribute::new("for", buyer_info.borrow().sender.to_string()),
+                Attribute::new("minted_by", env.contract.address.to_string()),
+                Attribute::new("minted_for", buyer_info.borrow().sender.to_string()),
                 Attribute::new("token_metadata", serde_json::to_string(&mint_msg).unwrap()),
-            ]
-        );
-        assert_eq!(events[1].ty, "sales-funds_sent");
-        assert_eq!(
-            events[1].attributes,
-            vec![
-                Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("to", CREATOR.to_string()),
+                Attribute::new("funds_to", CREATOR.to_string()),
                 Attribute::new(
-                    "amount",
+                    "funds_amount",
                     serde_json::to_string(&Coin {
                         amount: Uint128::from(10_u64),
                         denom: "USDC".to_string()
                     })
                     .unwrap()
                 ),
-            ]
-        );
-        assert_eq!(events[2].ty, "sales-refund_sent");
-        assert_eq!(
-            events[2].attributes,
-            vec![
-                Attribute::new("contract_address", env.contract.address.to_string()),
-                Attribute::new("to", buyer_info.borrow().sender.to_string()),
+                Attribute::new("refund_to", buyer_info.borrow().sender.to_string()),
                 Attribute::new(
-                    "amount",
+                    "refund_amount",
                     serde_json::to_string(&Coin {
                         amount: Uint128::from(10_u64),
                         denom: "USDC".to_string()

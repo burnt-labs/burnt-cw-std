@@ -158,8 +158,8 @@ where
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
                 buy_item_event = buy_item_event.add_attributes(vec![
                     ("contract_address", env.contract.address.to_string()),
-                    ("mintedBy", env.contract.address.to_string()),
-                    ("mintedFor", info.sender.to_string()),
+                    ("minted_by", env.contract.address.to_string()),
+                    ("minted_for", info.sender.to_string()),
                     ("token_metadata", serde_json::to_string(&mint_msg).unwrap()),
                 ]);
 
