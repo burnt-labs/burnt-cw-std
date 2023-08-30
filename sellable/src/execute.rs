@@ -131,11 +131,8 @@ where
     E: CustomMsg,
     C: CustomMsg,
 {
-    let ownable = sellable_module.get_ownable_module();
     let listed_tokens = sellable_module.get_listed_tokens();
     let tokens = sellable_module.get_token_module();
-
-    sellable_module.check_ownable(&deps.as_ref(), &env, &info, &ownable.borrow())?;
 
     for (token_id, price) in &listings {
         if listed_tokens

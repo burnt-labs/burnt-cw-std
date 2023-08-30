@@ -14,6 +14,7 @@ mod tests {
 
     const CREATOR: &str = "cosmos188rjfzzrdxlus60zgnrvs4rg0l73hct3azv93z";
     const BUYER: &str = "burnt1e2fuwe3uhq8zd9nkkk876nawrwdulgv47mkgww";
+    const VENDOR: &str = "burnt1e2fuwe3uhq8zd9nkkk876nawrwsulgv47mkgww";
 
     fn setup_sellable_module(
         deps: &mut DepsMut,
@@ -92,7 +93,7 @@ mod tests {
             .try_list(
                 &mut deps.as_mut(),
                 env.clone(),
-                mock_info(BUYER, &[]),
+                mock_info(VENDOR, &[]),
                 listings.clone(),
             )
             .expect_err("Should not be able to list token with wrong owner");
