@@ -146,13 +146,13 @@ impl<'a> Module for Allowable<'a> {
 
                 ExecuteMsg::RemoveAllowedAddrs { addresses } => {
                     self.remove_addrs(deps, &addresses)?;
-                    let resp = Response::new().add_event(Event::new(
-                        "allowable-remove_allowed_addrs",
-                    ).add_attributes(vec![
-                        ("contract_address", env.contract.address.to_string()),
-                        ("owner", info.sender.to_string()),
-                        ("addresses", serde_json::to_string(&addresses).unwrap()),
-                    ]));
+                    let resp = Response::new().add_event(
+                        Event::new("allowable-remove_allowed_addrs").add_attributes(vec![
+                            ("contract_address", env.contract.address.to_string()),
+                            ("owner", info.sender.to_string()),
+                            ("addresses", serde_json::to_string(&addresses).unwrap()),
+                        ]),
+                    );
                     Ok(resp)
                 }
             }

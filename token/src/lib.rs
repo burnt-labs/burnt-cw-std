@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Event};
+use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, Event, MessageInfo};
 use cw721_base::{ContractError, Cw721Contract, ExecuteMsg, InstantiateMsg, QueryMsg};
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
