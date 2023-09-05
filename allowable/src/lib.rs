@@ -3,7 +3,7 @@ mod msg;
 mod state;
 mod test;
 
-use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::{Addr, Deps, DepsMut, Env, Event, MessageInfo, StdResult};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -40,16 +40,18 @@ impl<'a> Allowable<'a> {
         self.enabled.save(deps.storage, &enabled)
     }
 
-    pub fn allow_addrs(&self, deps: &mut DepsMut, allowed_addrs: Vec<Addr>) -> StdResult<()> {
+    pub fn allow_addrs(&self, deps: &mut DepsMut, allowed_addrs: &Vec<Addr>) -> StdResult<()> {
         for addr in allowed_addrs {
-            self.allowed_addrs.save(deps.storage, addr, &true)?;
+            let address = addr.clone();
+            self.allowed_addrs.save(deps.storage, address, &true)?;
         }
         Ok(())
     }
 
-    pub fn remove_addrs(&self, deps: &mut DepsMut, removed_addrs: Vec<Addr>) -> StdResult<()> {
+    pub fn remove_addrs(&self, deps: &mut DepsMut, removed_addrs: &Vec<Addr>) -> StdResult<()> {
         for addr in removed_addrs {
-            self.allowed_addrs.remove(deps.storage, addr);
+            let address = addr.clone();
+            self.allowed_addrs.remove(deps.storage, address);
         }
         Ok(())
     }
@@ -89,7 +91,7 @@ impl<'a> Module for Allowable<'a> {
         msg: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         self.enabled.save(deps.storage, &msg.enabled)?;
-        self.allow_addrs(deps, msg.allowed_addrs)?;
+        self.allow_addrs(deps, &msg.allowed_addrs)?;
 
         Ok(Response::new())
     }
@@ -97,7 +99,7 @@ impl<'a> Module for Allowable<'a> {
     fn execute(
         &mut self,
         deps: &mut DepsMut,
-        _: Env,
+        env: Env,
         info: MessageInfo,
         msg: Self::ExecuteMsg,
     ) -> Result<Response, Self::Error> {
@@ -109,25 +111,48 @@ impl<'a> Module for Allowable<'a> {
             match msg {
                 ExecuteMsg::SetEnabled { enabled } => {
                     self.set_enabled(deps, enabled)?;
-                    let resp = Response::new();
+                    let resp = Response::new().add_event(
+                        Event::new("allowable-set_enabled").add_attributes(vec![
+                            ("contract_address", env.contract.address.to_string()),
+                            ("owner", info.sender.to_string()),
+                            ("enabled", enabled.to_string()),
+                        ]),
+                    );
                     Ok(resp)
                 }
 
                 ExecuteMsg::ClearAllAllowedAddrs {} => {
                     self.clear_addrs(deps)?;
-                    let resp = Response::new();
+                    let resp = Response::new().add_event(
+                        Event::new("allowable-clear_all_allowed_addrs").add_attributes(vec![
+                            ("contract_address", env.contract.address.to_string()),
+                            ("owner", info.sender.to_string()),
+                        ]),
+                    );
                     Ok(resp)
                 }
 
                 ExecuteMsg::AddAllowedAddrs { addresses } => {
-                    self.allow_addrs(deps, addresses)?;
-                    let resp = Response::new();
+                    self.allow_addrs(deps, &addresses)?;
+                    let resp = Response::new().add_event(
+                        Event::new("allowable-add_allowed_addrs").add_attributes(vec![
+                            ("contract_address", env.contract.address.to_string()),
+                            ("owner", info.sender.to_string()),
+                            ("addresses", serde_json::to_string(&addresses).unwrap()),
+                        ]),
+                    );
                     Ok(resp)
                 }
 
                 ExecuteMsg::RemoveAllowedAddrs { addresses } => {
-                    self.remove_addrs(deps, addresses)?;
-                    let resp = Response::new();
+                    self.remove_addrs(deps, &addresses)?;
+                    let resp = Response::new().add_event(Event::new(
+                        "allowable-remove_allowed_addrs",
+                    ).add_attributes(vec![
+                        ("contract_address", env.contract.address.to_string()),
+                        ("owner", info.sender.to_string()),
+                        ("addresses", serde_json::to_string(&addresses).unwrap()),
+                    ]));
                     Ok(resp)
                 }
             }

@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo};
+use cosmwasm_std::{Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Event};
 use cw721_base::{ContractError, Cw721Contract, ExecuteMsg, InstantiateMsg, QueryMsg};
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
@@ -79,8 +79,8 @@ where
         info: MessageInfo,
         msg: ExecuteMsg<T, E>,
     ) -> Result<Response, Self::Error> {
-        self.contract.execute(deps.branch(), env, info, msg)?;
-        Ok(Response::new())
+        let res = self.contract.execute(deps.branch(), env, info, msg)?;
+        Ok(Response::new().add_event(Event::new("token-execute").add_attributes(res.attributes)))
     }
 
     fn query(
