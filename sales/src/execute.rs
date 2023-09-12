@@ -128,7 +128,7 @@ where
         mint_msg: MintMsg<T>,
     ) -> Result<Response, ContractError> {
         // get current active sale
-        let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
+        let mut primary_sales = self.primary_sales.load(deps.storage)?;
         let mut buy_item_event = Event::new("sales-token_minted");
 
         for sale in primary_sales.iter_mut() {
@@ -153,8 +153,7 @@ where
                 }
                 // mint the item
                 let mut response = self
-                    .mint(deps, env.clone(), &info, mint_msg.clone())
-                    .unwrap();
+                    .mint(deps, env.clone(), &info, mint_msg.clone())?;
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
                 buy_item_event = buy_item_event.add_attributes(vec![
                     ("contract_address", env.contract.address.to_string()),
@@ -175,8 +174,7 @@ where
                 let message = BankMsg::Send {
                     to_address: ownable
                         .borrow()
-                        .get_owner(&deps.as_ref())
-                        .unwrap()
+                        .get_owner(&deps.as_ref())?
                         .to_string(),
                     amount: vec![Coin::new(
                         sale.price[0].amount.u128(),
@@ -190,8 +188,7 @@ where
                         "funds_to",
                         ownable
                             .borrow()
-                            .get_owner(&deps.as_ref())
-                            .unwrap()
+                            .get_owner(&deps.as_ref())?
                             .to_string(),
                     ),
                     (
