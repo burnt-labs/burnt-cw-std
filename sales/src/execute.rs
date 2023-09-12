@@ -139,7 +139,9 @@ where
             // or the supply cap is 0 (unlimited)
             {
                 // mint the item
-                let mut response = self.mint(deps, env.clone(), &info, mint_msg.clone()).unwrap();
+                let mut response = self
+                    .mint(deps, env.clone(), &info, mint_msg.clone())
+                    .unwrap();
                 claim_item_event = claim_item_event.add_attributes(vec![
                     ("contract_address", env.contract.address.to_string()),
                     ("minted_by", env.contract.address.to_string()),
@@ -195,8 +197,7 @@ where
                     }
                 }
                 // mint the item
-                let mut response = self
-                    .mint(deps, env.clone(), &info, mint_msg.clone())?;
+                let mut response = self.mint(deps, env.clone(), &info, mint_msg.clone())?;
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
                 buy_item_event = buy_item_event.add_attributes(vec![
                     ("contract_address", env.contract.address.to_string()),
@@ -215,10 +216,7 @@ where
                 // send funds to creator
                 let ownable = &self.sellable.borrow().ownable;
                 let message = BankMsg::Send {
-                    to_address: ownable
-                        .borrow()
-                        .get_owner(&deps.as_ref())?
-                        .to_string(),
+                    to_address: ownable.borrow().get_owner(&deps.as_ref())?.to_string(),
                     amount: vec![Coin::new(
                         sale.price[0].amount.u128(),
                         sale.price[0].denom.clone(),
@@ -229,10 +227,7 @@ where
                 buy_item_event = buy_item_event.add_attributes(vec![
                     (
                         "funds_to",
-                        ownable
-                            .borrow()
-                            .get_owner(&deps.as_ref())?
-                            .to_string(),
+                        ownable.borrow().get_owner(&deps.as_ref())?.to_string(),
                     ),
                     (
                         "funds_amount",
