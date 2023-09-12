@@ -120,6 +120,37 @@ where
         Err(ContractError::NoOngoingPrimarySaleError)
     }
 
+    pub fn claim_item(
+        &mut self,
+        env: Env,
+        deps: &mut DepsMut,
+        info: MessageInfo,
+        mint_msg: MintMsg<T>,
+    ) -> Result<Response, ContractError> {
+        let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
+
+        for sale in primary_sales.iter_mut() {
+            if !sale.disabled // if the sale is not disabled
+                && sale.end_time.gt(&env.block.time) // and the sale has not ended
+                && sale.price.is_empty() // We shouldn't have any price set if we are claiming.
+                && (sale.tokens_minted.lt(&sale.total_supply) // and tokens haven't hit their supply cap
+                || sale.total_supply.eq(&Uint64::from(0_u8)))
+            // or the supply cap is 0 (unlimited)
+            {
+                // mint the item
+                let response = self.mint(deps, env, &info, mint_msg).unwrap();
+                sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
+
+                if sale.tokens_minted.eq(&sale.total_supply) {
+                    sale.disabled = true;
+                }
+                self.primary_sales.save(deps.storage, &primary_sales)?;
+                return Ok(response);
+            }
+        }
+        Err(ContractError::NoOngoingPrimarySaleError)
+    }
+
     pub fn buy_item(
         &mut self,
         env: Env,

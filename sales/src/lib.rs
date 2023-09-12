@@ -99,6 +99,8 @@ where
             ExecuteMsg::HaltSale {} => self.halt_sale(deps, env, info),
 
             ExecuteMsg::BuyItem(mint_msg) => self.buy_item(env, deps, info, mint_msg),
+
+            ExecuteMsg::ClaimItem(mint_msg) => self.claim_item(env, deps, info, mint_msg),
         }
     }
 
