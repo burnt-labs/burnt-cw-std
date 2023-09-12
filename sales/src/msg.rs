@@ -46,6 +46,7 @@ pub enum ExecuteMsg<T> {
     PrimarySale(CreatePrimarySale),
     HaltSale {},
     BuyItem(MintMsg<T>),
+    ClaimItem(MintMsg<T>),
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

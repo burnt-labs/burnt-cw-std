@@ -78,11 +78,12 @@ where
         msg: InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         if let Some(sale) = msg.sale {
-            self.add_primary_sale(sale, deps, env.clone(), info)?;
+            let response = self.add_primary_sale(sale, deps, env.clone(), info)?;
+            Ok(response)
         } else {
             self.primary_sales.save(deps.storage, &vec![])?;
+            Ok(Response::default())
         }
-        Ok(Response::default())
     }
 
     fn execute(
@@ -98,6 +99,8 @@ where
             ExecuteMsg::HaltSale {} => self.halt_sale(deps, env, info),
 
             ExecuteMsg::BuyItem(mint_msg) => self.buy_item(env, deps, info, mint_msg),
+
+            ExecuteMsg::ClaimItem(mint_msg) => self.claim_item(env, deps, info, mint_msg),
         }
     }
 

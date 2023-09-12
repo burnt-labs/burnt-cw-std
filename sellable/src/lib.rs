@@ -2,6 +2,7 @@ pub mod errors;
 pub mod execute;
 pub mod msg;
 pub mod query;
+mod sellable_module;
 pub mod state;
 mod test;
 
@@ -10,12 +11,10 @@ use state::LISTED_TOKENS;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use allowable::Allowable;
 use cosmwasm_std::{Coin, CustomMsg, Deps, DepsMut, Env, MessageInfo};
 use errors::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryResp};
 use ownable::Ownable;
-use redeemable::Redeemable;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use token::Tokens;
@@ -45,7 +44,6 @@ where
     pub tokens: Rc<RefCell<Tokens<'a, T, C, E, Q>>>,
     pub ownable: Rc<RefCell<Ownable<'a>>>,
     pub listed_tokens: Map<'a, &'a str, Coin>,
-    pub redeemable: Rc<RefCell<Redeemable<'a>>>,
 }
 
 impl<'a, T, C, E, Q> Default for Sellable<'a, T, C, E, Q>
@@ -76,7 +74,6 @@ where
             tokens: Rc::new(RefCell::new(Tokens::default())),
             ownable: Rc::new(RefCell::new(Ownable::default())),
             listed_tokens: LISTED_TOKENS,
-            redeemable: Rc::new(RefCell::new(Redeemable::default())),
         }
     }
 }
@@ -115,10 +112,10 @@ where
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
         match msg {
-            ExecuteMsg::Buy {} => self.try_buy(deps, info),
+            ExecuteMsg::Buy {} => self.try_buy(deps, &env, info, None),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
-            ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, info, token_id),
-            ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
+            ExecuteMsg::BuyToken { token_id } => self.try_buy(deps, &env, info, Some(token_id)),
+            ExecuteMsg::Delist { token_id } => self.try_delist(deps, env, info, token_id),
         }
     }
 
@@ -162,12 +159,12 @@ where
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, Self::Error> {
-        return match msg {
-            ExecuteMsg::Buy {} => self.try_buy(deps, &env, info),
+        match msg {
+            ExecuteMsg::Buy {} => self.try_buy(deps, &env, info, None),
             ExecuteMsg::List { listings } => self.try_list(deps, env, info, listings),
-            ExecuteMsg::BuyToken { token_id } => self.try_buy_token(deps, &env, info, token_id),
-            ExecuteMsg::Delist { token_id } => self.try_delist(deps, info, token_id),
-        };
+            ExecuteMsg::BuyToken { token_id } => self.try_buy(deps, &env, info, Some(token_id)),
+            ExecuteMsg::Delist { token_id } => self.try_delist(deps, env, info, token_id),
+        }
     }
 
     fn query(&self, deps: &Deps, _env: Env, msg: QueryMsg) -> Result<Self::QueryResp, Self::Error> {

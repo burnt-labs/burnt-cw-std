@@ -11,8 +11,8 @@ mod tests {
 
     const CREATOR: &str = "cosmos188rjfzzrdxlus60zgnrvs4rg0l73hct3azv93z";
 
-    fn setup_allowable(deps: &mut DepsMut, _env: &Env, info: &MessageInfo) -> Allowable<'static> {
-        let mut allowable = Allowable::default();
+    fn setup_allowable(deps: &mut DepsMut, _env: &Env, _info: &MessageInfo) -> Allowable<'static> {
+        let allowable = Allowable::default();
         allowable
             .ownable
             .borrow_mut()
@@ -85,7 +85,7 @@ mod tests {
         let msg = QueryMsg::IsAllowed {
             address: addrs[0].clone(),
         };
-        let info = mock_info(CREATOR, &[]);
+        let _info = mock_info(CREATOR, &[]);
         let allowed = allowable.query(&deps.as_ref(), env.clone(), msg).unwrap();
         assert_eq!(allowed, QueryResp::IsAllowed { is_allowed: false });
 
@@ -100,7 +100,7 @@ mod tests {
         let msg = QueryMsg::IsAllowed {
             address: addrs[0].clone(),
         };
-        let info = mock_info(CREATOR, &[]);
+        let _info = mock_info(CREATOR, &[]);
         let allowed = allowable.query(&deps.as_ref(), env.clone(), msg).unwrap();
         assert_eq!(allowed, QueryResp::IsAllowed { is_allowed: true });
 

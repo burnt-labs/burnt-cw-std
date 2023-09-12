@@ -1,5 +1,5 @@
-use cosmwasm_std::StdError;
 use cosmwasm_std::{Addr, Deps, DepsMut, Env, MessageInfo, StdResult};
+use cosmwasm_std::{Event, StdError};
 use cw_storage_plus::Item;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -88,19 +88,23 @@ impl<'a> Module for Ownable<'a> {
     fn instantiate(
         &mut self,
         deps: &mut DepsMut,
-        _: &Env,
+        env: &Env,
         info: &MessageInfo,
         _: Self::InstantiateMsg,
     ) -> Result<Response, Self::Error> {
         self.owner.save(deps.storage, &info.sender)?;
-
-        Ok(Response::new())
+        let resp =
+            Response::new().add_event(Event::new("ownable-instantiate").add_attributes(vec![
+                ("contract_address", env.contract.address.to_string()),
+                ("owner", info.sender.to_string()),
+            ]));
+        Ok(resp)
     }
 
     fn execute(
         &mut self,
         deps: &mut DepsMut,
-        _: Env,
+        env: Env,
         info: MessageInfo,
         msg: Self::ExecuteMsg,
     ) -> Result<Response, Self::Error> {
@@ -114,7 +118,12 @@ impl<'a> Module for Ownable<'a> {
                     Err(Unauthorized {})
                 } else {
                     self.set_owner(deps, &owner)?;
-                    let resp = Response::new();
+                    let resp = Response::new().add_event(
+                        Event::new("ownable-set_owner").add_attributes(vec![
+                            ("contract_address", env.contract.address.to_string()),
+                            ("owner", owner.to_string()),
+                        ]),
+                    );
                     Ok(resp)
                 }
             }

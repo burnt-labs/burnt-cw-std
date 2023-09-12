@@ -39,9 +39,6 @@ pub enum ContractError {
     #[error("No relevant funds present in transaction")]
     NoFundsPresent,
 
-    #[error("No tokens configured for the sale")]
-    NoTokensDefined,
-
     #[error("Multiple funds present")]
     MultipleFundsError,
 
