@@ -128,6 +128,7 @@ where
         mint_msg: MintMsg<T>,
     ) -> Result<Response, ContractError> {
         let mut primary_sales = self.primary_sales.load(deps.storage).unwrap();
+        let mut claim_item_event = Event::new("sales-claim_item");
 
         for sale in primary_sales.iter_mut() {
             if !sale.disabled // if the sale is not disabled
@@ -138,13 +139,24 @@ where
             // or the supply cap is 0 (unlimited)
             {
                 // mint the item
-                let response = self.mint(deps, env, &info, mint_msg).unwrap();
+                let mut response = self.mint(deps, env.clone(), &info, mint_msg.clone()).unwrap();
+                claim_item_event = claim_item_event.add_attributes(vec![
+                    ("contract_address", env.contract.address.to_string()),
+                    ("minted_by", env.contract.address.to_string()),
+                    ("claimed_by", info.sender.to_string()),
+                    ("token_metadata", serde_json::to_string(&mint_msg).unwrap()),
+                ]);
                 sale.tokens_minted = sale.tokens_minted.checked_add(Uint64::from(1_u8)).unwrap();
 
                 if sale.tokens_minted.eq(&sale.total_supply) {
                     sale.disabled = true;
+                    claim_item_event = claim_item_event.add_attributes(vec![(
+                        "sales_ended",
+                        serde_json::to_string(&sale).unwrap(),
+                    )]);
                 }
                 self.primary_sales.save(deps.storage, &primary_sales)?;
+                response = response.add_event(claim_item_event);
                 return Ok(response);
             }
         }
