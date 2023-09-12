@@ -3,7 +3,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ContractError {
-    #[error("{0}")]
+    #[error("StdError {0}")]
     Std(#[from] StdError),
 
     #[error("Unauthorized")]
@@ -15,7 +15,7 @@ pub enum ContractError {
     #[error("No Active Primary Sale")]
     NoOngoingPrimarySaleError,
 
-    #[error("Token Module")]
+    #[error("Token Module Error {0}")]
     TokenModuleError(cw721_base::ContractError),
 
     #[error("No Funds")]
@@ -30,6 +30,6 @@ pub enum ContractError {
     #[error("Insufficient Funds")]
     InsufficientFundsError,
 
-    #[error("Invalid Primary Sale parameter")]
+    #[error("Invalid Primary Sale parameter {0}")]
     InvalidPrimarySaleParamError(String),
 }
